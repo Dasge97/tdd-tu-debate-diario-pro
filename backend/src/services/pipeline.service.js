@@ -20,6 +20,13 @@ const __dirname = path.dirname(__filename);
 const sharedDir = process.env.OPENCODE_SHARED_DIR || path.resolve(__dirname, "../../../shared/jobs");
 const inboxDir = path.join(sharedDir, "inbox");
 const outboxDir = path.join(sharedDir, "outbox");
+const MAX_NEWS_CONTENT_LENGTH = 1000;
+
+const truncateText = (value, max) => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return null;
+  return normalized.slice(0, max);
+};
 
 const buildPromptContract = ({
   jobId,
@@ -65,7 +72,6 @@ const buildPromptContract = ({
     url: item.url,
     category: item.category,
     published_at: item.published_at,
-    content: item.content,
     metadata: item.metadata
   }))
 });
@@ -83,7 +89,7 @@ export const sanitizeNewsItem = (item) => ({
   url: String(item?.url || "").trim(),
   category: item?.category ? String(item.category).trim() : null,
   published_at: item?.published_at ? String(item.published_at).trim() : null,
-  content: item?.content ? String(item.content).trim() : null,
+  content: truncateText(item?.content, MAX_NEWS_CONTENT_LENGTH),
   metadata: typeof item?.metadata === "object" && item.metadata ? item.metadata : {}
 });
 

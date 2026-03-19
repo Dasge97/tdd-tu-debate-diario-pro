@@ -14,6 +14,7 @@ import {
   updateAdminDebate,
   updateAdminUser
 } from "../services/admin.service.js";
+import { createGenerationJobResponse, getImportNews, listLatestImports } from "../services/pipeline.service.js";
 import { getOnlineUsersCount } from "../realtime/realtime.hub.js";
 
 const parsePayload = (value) => {
@@ -212,6 +213,64 @@ export async function adminAuditLogsController(req, res, next) {
         ...item,
         payload: parsePayload(item.payload)
       }))
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminRunDailyCycleController(req, res, next) {
+  try {
+    const latestImports = await listLatestImports(1);
+    const latestImport = latestImports[0] || null;
+
+    if (!latestImport) {
+      return res.status(404).json({ error: "No hay ningún stack importado para relanzar el ciclo." });
+    }
+
+    const requestedNewsCount = Number(req.body?.newsLimit || 20);
+    const targetDebates = Number(req.body?.targetDebates || 5);
+    const requestedCandidateDebates = Number(req.body?.candidateDebates || 10);
+    const newsItems = await getImportNews({
+      importId: latestImport.id,
+      limit: requestedNewsCount
+    });
+
+    if (newsItems.length === 0) {
+      return res.status(409).json({
+        error: "El último stack no contiene noticias reutilizables para generar debates."
+      });
+    }
+
+    if (newsItems.length < targetDebates) {
+      return res.status(409).json({
+        error: `El último stack solo tiene ${newsItems.length} noticias y no puede generar ${targetDebates} debates`,
+        availableNews: newsItems.length,
+        targetDebates
+      });
+    }
+
+    const result = await createGenerationJobResponse({
+      importId: latestImport.id,
+      requestedNewsCount,
+      targetDebates,
+      requestedCandidateDebates,
+      newsItems,
+      markAssigned: false
+    });
+
+    await logAdminAction(req.auth.userId, "admin.daily-cycle.run", "generation_job", null, {
+      jobId: result.jobId,
+      importId: latestImport.id,
+      requestedNewsCount,
+      targetDebates,
+      requestedCandidateDebates
+    });
+
+    res.status(201).json({
+      ...result,
+      importId: latestImport.id,
+      relaunched: true
     });
   } catch (error) {
     next(error);

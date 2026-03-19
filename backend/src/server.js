@@ -39,7 +39,7 @@ app.use(
     origin: ["http://localhost:5173", "http://127.0.0.1:5173"]
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use("/uploads", express.static(uploadsDir));
 app.use(express.static(publicDir));
 
@@ -67,6 +67,9 @@ app.use((err, _req, res, _next) => {
   }
   if (err?.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({ error: "La imagen no puede superar 2 MB." });
+  }
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ error: "La petición JSON supera el tamaño máximo permitido." });
   }
   res.status(500).json({ error: "Error interno del servidor." });
 });

@@ -10,6 +10,7 @@ import {
   adminNotificationsController,
   adminOverviewController,
   adminRecentActivityController,
+  adminRunDailyCycleController,
   adminUpdateCommentController,
   adminUpdateDebateController,
   adminUpdateUserController,
@@ -22,6 +23,7 @@ adminRouter.use(requireAdmin);
 
 adminRouter.get("/overview", adminOverviewController);
 adminRouter.get("/activity", adminRecentActivityController);
+adminRouter.post("/daily-cycle/run", adminRunDailyCycleController);
 adminRouter.get("/users", adminUsersController);
 adminRouter.patch("/users/:userId", adminUpdateUserController);
 adminRouter.get("/debates", adminDebatesController);

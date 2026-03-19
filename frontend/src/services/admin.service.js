@@ -5,6 +5,14 @@ export const adminService = {
     const { data } = await api.get("/api/admin/overview");
     return data;
   },
+  async runDailyCycle(payload = {}) {
+    const { data } = await api.post("/api/admin/daily-cycle/run", payload);
+    return data;
+  },
+  async getGenerationJob(jobId) {
+    const { data } = await api.get(`/generation/jobs/${jobId}`);
+    return data;
+  },
   async getActivity(limit = 12) {
     const { data } = await api.get("/api/admin/activity", { params: { limit } });
     return data;

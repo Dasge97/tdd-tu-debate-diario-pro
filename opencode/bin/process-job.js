@@ -66,6 +66,7 @@ const shouldAutoCompleteJob = () =>
   );
 
 const sanitizeText = (value) => String(value || "").replace(/^["'\s]+|["'\s]+$/g, "").trim();
+const truncateText = (value, max) => sanitizeText(value).slice(0, max);
 
 const hasRoboticEditorialTone = (value) => {
   const normalized = sanitizeText(value).toLowerCase();
@@ -235,8 +236,6 @@ ${item.candidate_id}
 - source: ${item.source}
 - title: ${item.title}
 - summary: ${item.summary}
-- content:
-${item.content || ""}
 `.trim()
     )
     .join("\n\n");

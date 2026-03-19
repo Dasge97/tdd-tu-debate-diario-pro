@@ -71,6 +71,13 @@ while (true) {
         // Result payload not generated yet.
       }
 
+      try {
+        await fs.access(errorPath);
+        continue;
+      } catch {
+        // No prior failure recorded, safe to process.
+      }
+
       inFlight.add(jobId);
 
       processFile(inputPath)

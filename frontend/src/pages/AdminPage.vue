@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { adminService } from "@/services/admin.service";
 import { useUsersStore } from "@/stores/users";
@@ -17,6 +17,9 @@ const error = ref("");
 const activeTab = ref("overview");
 const overview = ref(null);
 const recentActivity = ref([]);
+const dailyCycleRunning = ref(false);
+const dailyCycleResult = ref(null);
+let dailyCyclePollTimer = null;
 
 const usersState = reactive({ items: [], page: 1, pageSize: 8, total: 0, q: "" });
 const debatesState = reactive({ items: [], page: 1, pageSize: 6, total: 0, q: "" });
@@ -27,6 +30,7 @@ const auditState = reactive({ items: [], page: 1, pageSize: 8, total: 0 });
 
 const tabs = [
   { id: "overview", label: "Resumen" },
+  { id: "daily-cycle", label: "Ciclo diario" },
   { id: "users", label: "Usuarios" },
   { id: "debates", label: "Debates" },
   { id: "comments", label: "Comentarios" },
@@ -50,6 +54,63 @@ const metricCards = computed(() => {
     { label: "Amistades", value: overview.value.acceptedFriendships, detail: `${overview.value.pendingFriendships} pendientes` }
   ];
 });
+
+const dailyCycleTone = computed(() => {
+  const status = String(dailyCycleResult.value?.status || "").trim().toLowerCase();
+  if (status === "applied") return "success";
+  if (status === "failed") return "danger";
+  if (status === "awaiting-output") return "warning";
+  return "secondary";
+});
+
+const dailyCycleLabel = computed(() => {
+  const status = String(dailyCycleResult.value?.status || "").trim().toLowerCase();
+  if (status === "applied") return "Aplicado";
+  if (status === "failed") return "Fallido";
+  if (status === "awaiting-output") return "Procesando";
+  return "Sin estado";
+});
+
+const stopDailyCyclePolling = () => {
+  if (dailyCyclePollTimer) {
+    clearTimeout(dailyCyclePollTimer);
+    dailyCyclePollTimer = null;
+  }
+};
+
+const scheduleDailyCyclePolling = (jobId) => {
+  stopDailyCyclePolling();
+  dailyCyclePollTimer = window.setTimeout(async () => {
+    try {
+      const job = await adminService.getGenerationJob(jobId);
+      dailyCycleResult.value = {
+        ...dailyCycleResult.value,
+        ...job,
+        jobId: job.id || dailyCycleResult.value?.jobId || jobId
+      };
+
+      if (job.status === "applied") {
+        dailyCycleRunning.value = false;
+        await Promise.all([loadOverview(), loadDebates(), loadAuditLogs()]);
+        toastStore.success("El ciclo diario ha terminado y los debates del día ya están aplicados.");
+        stopDailyCyclePolling();
+        return;
+      }
+
+      if (job.status === "failed") {
+        dailyCycleRunning.value = false;
+        error.value = job.errorMessage || "El ciclo diario ha fallado.";
+        toastStore.error(error.value);
+        stopDailyCyclePolling();
+        return;
+      }
+
+      scheduleDailyCyclePolling(jobId);
+    } catch (_err) {
+      scheduleDailyCyclePolling(jobId);
+    }
+  }, 3000);
+};
 
 const loadOverview = async () => {
   const [overviewData, activityData] = await Promise.all([
@@ -133,6 +194,30 @@ const loadAll = async () => {
   }
 };
 
+const runDailyCycle = async () => {
+  stopDailyCyclePolling();
+  dailyCycleRunning.value = true;
+  error.value = "";
+  try {
+    const result = await adminService.runDailyCycle();
+    dailyCycleResult.value = result;
+    await Promise.all([loadOverview(), loadAuditLogs()]);
+    if (result?.jobId) {
+      scheduleDailyCyclePolling(result.jobId);
+    }
+    toastStore.success("Ciclo diario lanzado. El panel actualizará el estado automáticamente hasta que termine.");
+  } catch (err) {
+    const message = err?.response?.data?.error || "No se pudo relanzar el ciclo diario.";
+    error.value = message;
+    toastStore.error(message);
+    stopDailyCyclePolling();
+  } finally {
+    if (!dailyCycleResult.value?.jobId) {
+      dailyCycleRunning.value = false;
+    }
+  }
+};
+
 const changePage = async (state, nextPage, loader) => {
   const max = totalPages(state);
   state.page = Math.min(Math.max(nextPage, 1), max);
@@ -209,6 +294,10 @@ onMounted(async () => {
   }
   await loadAll();
 });
+
+onBeforeUnmount(() => {
+  stopDailyCyclePolling();
+});
 </script>
 
 <template>
@@ -283,6 +372,65 @@ onMounted(async () => {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="activeTab === 'daily-cycle'">
+        <div class="row g-3">
+          <div class="col-12 col-xl-7">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white py-3">
+                <strong>Actualizar debates del día</strong>
+              </div>
+              <div class="card-body">
+                <p class="text-secondary mb-3">
+                  Este botón lanza manualmente el mismo relanzado del último stack importado para generar el nuevo bloque diario.
+                </p>
+                <div v-if="dailyCycleResult" class="d-flex align-items-center gap-2 mb-3">
+                  <span
+                    v-if="dailyCycleRunning"
+                    class="spinner-border spinner-border-sm text-warning"
+                    aria-hidden="true"
+                  />
+                  <span class="badge" :class="`text-bg-${dailyCycleTone}`">
+                    {{ dailyCycleLabel }}
+                  </span>
+                  <span class="small text-secondary">
+                    Job {{ dailyCycleResult.jobId }}
+                  </span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-dark" :disabled="dailyCycleRunning" @click="runDailyCycle">
+                    {{ dailyCycleRunning ? "Lanzando ciclo..." : "Lanzar ciclo manual" }}
+                  </button>
+                  <a class="btn btn-outline-secondary" :href="`${opsBaseUrl}/imports.html`" target="_blank" rel="noreferrer">Ver stacks</a>
+                  <a class="btn btn-outline-secondary" :href="`${opsBaseUrl}/jobs.html`" target="_blank" rel="noreferrer">Ver jobs</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white py-3">
+                <strong>Último lanzamiento manual</strong>
+              </div>
+              <div class="card-body">
+                <div v-if="dailyCycleResult" class="admin-observability-grid">
+                  <div><span>Job</span><strong>{{ dailyCycleResult.jobId }}</strong></div>
+                  <div><span>Import</span><strong>{{ dailyCycleResult.importId }}</strong></div>
+                  <div><span>Estado</span><strong>{{ dailyCycleLabel }}</strong></div>
+                  <div><span>Noticias</span><strong>{{ dailyCycleResult.selectedNewsCount }}</strong></div>
+                  <div><span>Debates objetivo</span><strong>{{ dailyCycleResult.targetDebates }}</strong></div>
+                  <div><span>Aplicado</span><strong>{{ dailyCycleResult.appliedAt || "-" }}</strong></div>
+                  <div><span>Error</span><strong>{{ dailyCycleResult.errorMessage || "-" }}</strong></div>
+                </div>
+                <p v-else class="text-secondary mb-0">
+                  Aún no has lanzado el ciclo manual desde este panel.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

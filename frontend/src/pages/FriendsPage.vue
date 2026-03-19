@@ -152,7 +152,7 @@ const visiblePages = computed(() => {
       <div class="tab-content friends-tab-content">
         <div v-if="activeTab === 'friends'" class="tab-pane fade show active">
           <div class="row g-3">
-            <div class="col-12 col-xl-5">
+            <div class="col-12 col-lg-5">
               <div class="card debate-surface friends-fixed-card">
                 <div class="card-header friends-card-header">Solicitudes recibidas</div>
                 <div class="card-body friends-table-body">
@@ -195,7 +195,7 @@ const visiblePages = computed(() => {
               </div>
             </div>
 
-            <div class="col-12 col-xl-7">
+            <div class="col-12 col-lg-7">
               <div class="card debate-surface friends-fixed-card">
                 <div class="card-header friends-card-header">Tus amigos</div>
                 <div class="card-body friends-table-body">
