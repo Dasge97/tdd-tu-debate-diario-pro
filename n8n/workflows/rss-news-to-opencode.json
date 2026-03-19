@@ -1,0 +1,453 @@
+{
+  "name": "RSS News To Opencode API",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        120,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://example.com/rss/source-1.xml"
+      },
+      "id": "rss-1",
+      "name": "RSS Read 1",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://example.com/rss/source-2.xml"
+      },
+      "id": "rss-2",
+      "name": "RSS Read 2",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://example.com/rss/source-3.xml"
+      },
+      "id": "rss-3",
+      "name": "RSS Read 3",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://example.com/rss/source-4.xml"
+      },
+      "id": "rss-4",
+      "name": "RSS Read 4",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => ({ json: { source: 'source-1', title: item.json.title || '', summary: item.json.contentSnippet || item.json.content || '', url: item.json.link || '', published_at: item.json.isoDate || item.json.pubDate || new Date().toISOString(), category: item.json.categories?.[0] || null, content: item.json['content:encoded'] || item.json.content || '', metadata: { raw: item.json } } })).filter((item) => item.json.title && item.json.url);"
+      },
+      "id": "format-1",
+      "name": "limpiar/formatear1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const maxItems = 10; return items.filter((item) => item.json.summary).slice(0, maxItems);"
+      },
+      "id": "filter-1",
+      "name": "filtrar y limitar1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => ({ json: { source: 'source-2', title: item.json.title || '', summary: item.json.contentSnippet || item.json.content || '', url: item.json.link || '', published_at: item.json.isoDate || item.json.pubDate || new Date().toISOString(), category: item.json.categories?.[0] || null, content: item.json['content:encoded'] || item.json.content || '', metadata: { raw: item.json } } })).filter((item) => item.json.title && item.json.url);"
+      },
+      "id": "format-2",
+      "name": "limpiar/formatear2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const maxItems = 10; return items.filter((item) => item.json.summary).slice(0, maxItems);"
+      },
+      "id": "filter-2",
+      "name": "filtrar y limitar2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => ({ json: { source: 'source-3', title: item.json.title || '', summary: item.json.contentSnippet || item.json.content || '', url: item.json.link || '', published_at: item.json.isoDate || item.json.pubDate || new Date().toISOString(), category: item.json.categories?.[0] || null, content: item.json['content:encoded'] || item.json.content || '', metadata: { raw: item.json } } })).filter((item) => item.json.title && item.json.url);"
+      },
+      "id": "format-3",
+      "name": "limpiar/formatear3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const maxItems = 10; return items.filter((item) => item.json.summary).slice(0, maxItems);"
+      },
+      "id": "filter-3",
+      "name": "filtrar y limitar3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => ({ json: { source: 'source-4', title: item.json.title || '', summary: item.json.contentSnippet || item.json.content || '', url: item.json.link || '', published_at: item.json.isoDate || item.json.pubDate || new Date().toISOString(), category: item.json.categories?.[0] || null, content: item.json['content:encoded'] || item.json.content || '', metadata: { raw: item.json } } })).filter((item) => item.json.title && item.json.url);"
+      },
+      "id": "format-4",
+      "name": "limpiar/formatear4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const maxItems = 10; return items.filter((item) => item.json.summary).slice(0, maxItems);"
+      },
+      "id": "filter-4",
+      "name": "filtrar y limitar4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge-12",
+      "name": "Merge 1+2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1020,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge-123",
+      "name": "Merge 12+3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1220,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge-1234",
+      "name": "Merge 123+4",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1420,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { triggerType: 'n8n-manual', items: items.map((item) => item.json) } }];"
+      },
+      "id": "stack-items",
+      "name": "agrupar en stack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NEWS_API_BASE_URL}}/news/import",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "send-api",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1860,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read 3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read 1": {
+      "main": [
+        [
+          {
+            "node": "limpiar/formatear1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limpiar/formatear1": {
+      "main": [
+        [
+          {
+            "node": "filtrar y limitar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read 2": {
+      "main": [
+        [
+          {
+            "node": "limpiar/formatear2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limpiar/formatear2": {
+      "main": [
+        [
+          {
+            "node": "filtrar y limitar2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read 3": {
+      "main": [
+        [
+          {
+            "node": "limpiar/formatear3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limpiar/formatear3": {
+      "main": [
+        [
+          {
+            "node": "filtrar y limitar3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read 4": {
+      "main": [
+        [
+          {
+            "node": "limpiar/formatear4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limpiar/formatear4": {
+      "main": [
+        [
+          {
+            "node": "filtrar y limitar4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtrar y limitar1": {
+      "main": [
+        [
+          {
+            "node": "Merge 1+2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtrar y limitar2": {
+      "main": [
+        [
+          {
+            "node": "Merge 1+2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 1+2": {
+      "main": [
+        [
+          {
+            "node": "Merge 12+3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtrar y limitar3": {
+      "main": [
+        [
+          {
+            "node": "Merge 12+3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 12+3": {
+      "main": [
+        [
+          {
+            "node": "Merge 123+4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtrar y limitar4": {
+      "main": [
+        [
+          {
+            "node": "Merge 123+4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 123+4": {
+      "main": [
+        [
+          {
+            "node": "agrupar en stack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agrupar en stack": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "rss-news-to-opencode-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}

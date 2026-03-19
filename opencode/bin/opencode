@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+REAL_OPENCODE_BIN="/usr/local/bin/opencode.real"
+
+if [ -f /etc/alpine-release ]; then
+  for candidate in \
+    /usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64-musl/bin/opencode \
+    /usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64-baseline-musl/bin/opencode \
+    /usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-arm64-musl/bin/opencode
+  do
+    if [ -x "$candidate" ]; then
+      export OPENCODE_BIN_PATH="$candidate"
+      break
+    fi
+  done
+fi
+
+exec "$REAL_OPENCODE_BIN" "$@"

@@ -1,0 +1,9 @@
+{
+  "name": "tdd-opencode-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^0.2.13"
+  }
+}

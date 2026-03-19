@@ -1,0 +1,109 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_PORT: ${APP_PORT:-3000}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-tdd_db}
+      DB_USER: ${DB_USER:-tdd_user}
+      DB_PASSWORD: ${DB_PASSWORD:-tdd_password}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      OPENCODE_SHARED_DIR: ${OPENCODE_SHARED_DIR:-/shared/jobs}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./shared:/shared
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:${APP_PORT:-3000}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${N8N_PORT:-5689}:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_EDITOR_BASE_URL: http://localhost:${N8N_PORT:-5689}
+      WEBHOOK_URL: http://localhost:${N8N_PORT:-5689}
+      GENERIC_TIMEZONE: Europe/Madrid
+      TZ: Europe/Madrid
+      N8N_SECURE_COOKIE: "false"
+      N8N_BASIC_AUTH_ACTIVE: "${N8N_BASIC_AUTH_ACTIVE:-true}"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-tdd}
+      NEWS_API_BASE_URL: http://backend:3000
+      BACKEND_API_BASE_URL: http://backend:3000
+    volumes:
+      - ./n8n:/workflows
+      - n8n_data:/home/node/.n8n
+
+  opencode:
+    build:
+      context: ./opencode
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      OPENCODE_SHARED_DIR: ${OPENCODE_SHARED_DIR:-/shared/jobs}
+      OPENCODE_AUTO_PROCESS: ${OPENCODE_AUTO_PROCESS:-true}
+      OPENCODE_AUTO_COMPLETE_JOB: ${OPENCODE_AUTO_COMPLETE_JOB:-true}
+      OPENCODE_JOB_POLL_MS: ${OPENCODE_JOB_POLL_MS:-5000}
+      BACKEND_API_BASE_URL: ${BACKEND_API_BASE_URL:-http://backend:3000}
+      NEWS_API_BASE_URL: ${BACKEND_API_BASE_URL:-http://backend:3000}
+      OPENCODE_PROVIDER_ID: ${OPENCODE_PROVIDER_ID:-opencode}
+      OPENCODE_PROVIDER_NAME: ${OPENCODE_PROVIDER_NAME:-OpenCode}
+      OPENCODE_PROVIDER_NPM: ${OPENCODE_PROVIDER_NPM:-__builtin__}
+      OPENCODE_BASE_URL: ${OPENCODE_BASE_URL:-}
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+      OPENCODE_MODEL_ID: ${OPENCODE_MODEL_ID:-minimax-m2.5-free}
+    volumes:
+      - ./shared:/shared
+
+volumes:
+  mysql_data:
+  n8n_data:

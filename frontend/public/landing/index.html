@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TDD Landing - Tu Debate Diario</title>
+    <meta
+      name="description"
+      content="Tu Debate Diario convierte la actualidad en debates breves, claros y participativos para que opines en cinco minutos al día."
+    />
+    <link rel="stylesheet" href="/landing/landing.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <div class="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <!-- Sidebar mejorada -->
+        <aside class="surface h-fit overflow-hidden xl:sticky xl:top-4">
+          <div class="border-b border-line px-5 py-5">
+            <div class="flex items-center gap-3">
+              <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-lg font-bold text-white">T</div>
+              <div>
+                <div class="text-lg font-semibold tracking-tight">Tu Debate Diario</div>
+                <div class="text-sm text-muted">Actualidad, opinión y reputación</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 p-4">
+            <a href="#hero" class="sidebar-link sidebar-link-active">
+              <span class="flex items-center gap-3">
+                <span>🏠</span>
+                <span>Inicio</span>
+              </span>
+              <span class="sidebar-badge">Hoy</span>
+            </a>
+            <a href="#debates" class="sidebar-link">
+              <span class="flex items-center gap-3">
+                <span>🗞️</span>
+                <span>Debates del día</span>
+              </span>
+              <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">5</span>
+            </a>
+            <a href="#live" class="sidebar-link">
+              <span class="flex items-center gap-3">
+                <span>⚡</span>
+                <span>Actividad en vivo</span>
+              </span>
+              <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Live</span>
+            </a>
+            <a href="#ranking" class="sidebar-link">
+              <span class="flex items-center gap-3">
+                <span>🏆</span>
+                <span>Ranking</span>
+              </span>
+              <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Top 5</span>
+            </a>
+            <a href="#como-funciona" class="sidebar-link">
+              <span class="flex items-center gap-3">
+                <span>🧭</span>
+                <span>Cómo funciona</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="border-t border-line bg-slate-900 px-5 py-5 text-white">
+            <div class="mini-label text-white/60">Pulso del día</div>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div class="rounded-2xl bg-white/10 p-3">
+                <div class="text-2xl font-semibold">148</div>
+                <div class="mt-1 text-white/70">votos emitidos</div>
+              </div>
+              <div class="rounded-2xl bg-white/10 p-3">
+                <div class="text-2xl font-semibold">37</div>
+                <div class="mt-1 text-white/70">comentarios nuevos</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="space-y-6">
+          <!-- Hero -->
+          <section id="hero" class="surface overflow-hidden">
+            <div class="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-10 lg:py-10">
+              <div>
+                <div class="mini-label">La actualidad, convertida en conversación</div>
+                <h1 class="mt-4 max-w-3xl text-4xl font-semibold leading-none tracking-tight sm:text-5xl lg:text-6xl">
+                  Debate lo que importa en <span class="text-accent">5 minutos al día</span>
+                </h1>
+                <p class="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
+                  TDD convierte los grandes temas del día en debates claros, breves y participativos. Entras, entiendes el contexto, votas tu postura y ves cómo responde la comunidad.
+                </p>
+
+                <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+                  <a href="#debates" class="primary-btn">Entrar a los debates de hoy</a>
+                  <a href="#ranking" class="secondary-btn">Ver el ranking de la comunidad</a>
+                </div>
+
+                <div class="mt-8 flex flex-wrap gap-3 text-sm text-slate-700">
+                  <span class="meta-pill">🧠 Contexto claro antes de opinar</span>
+                  <span class="meta-pill">🔥 Reputación por participar bien</span>
+                  <span class="meta-pill">⏱️ Diseñado para entrar y debatir rápido</span>
+                </div>
+              </div>
+
+              <div class="grid gap-4">
+                <div class="hero-stat">
+                  <div class="mini-label">Debate protagonista</div>
+                  <div class="mt-3 text-xl font-semibold leading-tight">¿Debe Europa limitar el reconocimiento facial en espacios públicos?</div>
+                  <div class="mt-4 flex flex-wrap gap-2 text-sm text-muted">
+                    <span class="meta-pill">🔥 412 votos</span>
+                    <span class="meta-pill">💬 86 comentarios</span>
+                    <span class="meta-pill">📈 Tendencia alta</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="hero-stat">
+                    <div class="text-3xl font-semibold">5</div>
+                    <div class="mt-1 text-sm text-muted">debates nuevos cada día</div>
+                  </div>
+                  <div class="hero-stat">
+                    <div class="text-3xl font-semibold">+1.2k</div>
+                    <div class="mt-1 text-sm text-muted">interacciones semanales</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Debates del día -->
+          <section id="debates" class="surface px-6 py-7 sm:px-8">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 class="section-title">Debates del día</h2>
+                <p class="section-copy">Cinco temas listos para entrar, entender rápido y tomar posición sin perder tiempo.</p>
+              </div>
+              <a href="#hero" class="text-sm font-semibold text-accent hover:text-accent-dark">Ver resumen del día</a>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              <article class="debate-card">
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="meta-pill">🔥 Muy activo</span>
+                    <span class="text-sm font-medium text-muted">Tecnología</span>
+                  </div>
+                  <h3 class="mt-4 text-xl font-semibold leading-tight">Reconocimiento facial: ¿seguridad o vigilancia masiva?</h3>
+                  <p class="mt-3 text-sm leading-6 text-muted">Europa estudia límites al reconocimiento facial en calles, aeropuertos y estaciones. La discusión enfrenta seguridad, privacidad y sesgos algorítmicos.</p>
+                </div>
+                <div class="mt-5 flex items-center justify-between gap-4 border-t border-line pt-4 text-sm text-muted">
+                  <div class="flex flex-wrap gap-3">
+                    <span>💬 86 comentarios</span>
+                    <span>🗳️ 412 votos</span>
+                  </div>
+                  <button class="primary-btn px-4 py-2 text-sm">Entrar al debate</button>
+                </div>
+              </article>
+
+              <article class="debate-card">
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="meta-pill">📈 Subiendo</span>
+                    <span class="text-sm font-medium text-muted">Economía</span>
+                  </div>
+                  <h3 class="mt-4 text-xl font-semibold leading-tight">Semana laboral de cuatro días: ¿mejor vida o menor productividad?</h3>
+                  <p class="mt-3 text-sm leading-6 text-muted">Empresas y administraciones vuelven a probar calendarios reducidos. El debate está en si el bienestar compensa el posible coste operativo.</p>
+                </div>
+                <div class="mt-5 flex items-center justify-between gap-4 border-t border-line pt-4 text-sm text-muted">
+                  <div class="flex flex-wrap gap-3">
+                    <span>💬 59 comentarios</span>
+                    <span>🗳️ 275 votos</span>
+                  </div>
+                  <button class="primary-btn px-4 py-2 text-sm">Entrar al debate</button>
+                </div>
+              </article>
+
+              <article class="debate-card">
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="meta-pill">🔥 Polarizado</span>
+                    <span class="text-sm font-medium text-muted">Política</span>
+                  </div>
+                  <h3 class="mt-4 text-xl font-semibold leading-tight">Alquiler turístico: ¿hay que limitarlo en las grandes ciudades?</h3>
+                  <p class="mt-3 text-sm leading-6 text-muted">La presión sobre el precio de la vivienda vuelve a colocar a Airbnb y similares en el centro del debate urbano.</p>
+                </div>
+                <div class="mt-5 flex items-center justify-between gap-4 border-t border-line pt-4 text-sm text-muted">
+                  <div class="flex flex-wrap gap-3">
+                    <span>💬 94 comentarios</span>
+                    <span>🗳️ 388 votos</span>
+                  </div>
+                  <button class="primary-btn px-4 py-2 text-sm">Entrar al debate</button>
+                </div>
+              </article>
+
+              <article class="debate-card">
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="meta-pill">🧪 Nuevo</span>
+                    <span class="text-sm font-medium text-muted">Ciencia</span>
+                  </div>
+                  <h3 class="mt-4 text-xl font-semibold leading-tight">Tratamientos genéticos: ¿innovación necesaria o acceso desigual?</h3>
+                  <p class="mt-3 text-sm leading-6 text-muted">Los avances biomédicos prometen cambiar vidas, pero abren dudas sobre precio, prioridad sanitaria y desigualdad futura.</p>
+                </div>
+                <div class="mt-5 flex items-center justify-between gap-4 border-t border-line pt-4 text-sm text-muted">
+                  <div class="flex flex-wrap gap-3">
+                    <span>💬 41 comentarios</span>
+                    <span>🗳️ 193 votos</span>
+                  </div>
+                  <button class="primary-btn px-4 py-2 text-sm">Entrar al debate</button>
+                </div>
+              </article>
+
+              <article class="debate-card">
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="meta-pill">🌍 Caliente</span>
+                    <span class="text-sm font-medium text-muted">Internacional</span>
+                  </div>
+                  <h3 class="mt-4 text-xl font-semibold leading-tight">¿Debe Europa reducir su dependencia tecnológica de EE. UU. y China?</h3>
+                  <p class="mt-3 text-sm leading-6 text-muted">La soberanía digital vuelve al centro del tablero geopolítico: chips, nube, IA y seguridad estratégica se mezclan en una sola discusión.</p>
+                </div>
+                <div class="mt-5 flex items-center justify-between gap-4 border-t border-line pt-4 text-sm text-muted">
+                  <div class="flex flex-wrap gap-3">
+                    <span>💬 67 comentarios</span>
+                    <span>🗳️ 249 votos</span>
+                  </div>
+                  <button class="primary-btn px-4 py-2 text-sm">Entrar al debate</button>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <!-- Actividad en vivo -->
+            <section id="live" class="surface px-6 py-7 sm:px-8">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <h2 class="section-title">Actividad en vivo</h2>
+                  <p class="section-copy">La plataforma se mueve aunque entres solo cinco minutos. Aquí ves quién está votando, comentando y qué temas se están calentando.</p>
+                </div>
+                <div class="hidden rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700 sm:block">En directo</div>
+              </div>
+
+              <div class="mt-6 grid gap-3" id="live-feed">
+                <div class="live-row">
+                  <div class="mt-1 flex h-9 w-9 items-center justify-center rounded-2xl bg-accent-soft text-lg">🗳️</div>
+                  <div>
+                    <div class="font-medium">Nora acaba de votar <span class="text-accent">A favor</span> en “Semana laboral de cuatro días”</div>
+                    <div class="mt-1 text-sm text-muted">hace 12 segundos</div>
+                  </div>
+                </div>
+                <div class="live-row">
+                  <div class="mt-1 flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 text-lg">💬</div>
+                  <div>
+                    <div class="font-medium">@carlos_opinion respondió a una objeción sobre alquiler turístico</div>
+                    <div class="mt-1 text-sm text-muted">hace 35 segundos</div>
+                  </div>
+                </div>
+                <div class="live-row">
+                  <div class="mt-1 flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100 text-lg">🔥</div>
+                  <div>
+                    <div class="font-medium">“Reconocimiento facial” entra en los debates activos del momento</div>
+                    <div class="mt-1 text-sm text-muted">ahora mismo</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Ranking / gamificación -->
+            <section id="ranking" class="surface px-6 py-7 sm:px-8">
+              <div>
+                <h2 class="section-title">Ranking de hoy</h2>
+                <p class="section-copy">La reputación se gana participando bien: explicar, aportar contexto y sostener una postura con criterio.</p>
+              </div>
+
+              <div class="mt-6 space-y-3">
+                <div class="leader-row">
+                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-lg font-bold text-amber-700">1</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-semibold">ana_debate</div>
+                    <div class="mt-1 text-sm text-muted">Nivel 12 · 2.480 pts</div>
+                  </div>
+                  <span class="meta-pill">🔥 Influyente</span>
+                </div>
+                <div class="leader-row">
+                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg font-bold text-slate-700">2</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-semibold">maria_criterio</div>
+                    <div class="mt-1 text-sm text-muted">Nivel 10 · 2.110 pts</div>
+                  </div>
+                  <span class="meta-pill">🧠 Analista</span>
+                </div>
+                <div class="leader-row">
+                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-100 text-lg font-bold text-orange-700">3</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-semibold">carlos_opinion</div>
+                    <div class="mt-1 text-sm text-muted">Nivel 9 · 1.870 pts</div>
+                  </div>
+                  <span class="meta-pill">⚖️ Argumentador</span>
+                </div>
+                <div class="leader-row">
+                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-lg font-bold text-emerald-700">4</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-semibold">lucia_contexto</div>
+                    <div class="mt-1 text-sm text-muted">Nivel 8 · 1.620 pts</div>
+                  </div>
+                  <span class="meta-pill">📚 Contextual</span>
+                </div>
+                <div class="leader-row">
+                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-bold text-indigo-700">5</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-semibold">diego_datos</div>
+                    <div class="mt-1 text-sm text-muted">Nivel 7 · 1.410 pts</div>
+                  </div>
+                  <span class="meta-pill">📊 Verificador</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Cómo funciona -->
+          <section id="como-funciona" class="surface px-6 py-7 sm:px-8">
+            <div>
+              <h2 class="section-title">Cómo funciona</h2>
+              <p class="section-copy">La propuesta de valor de TDD debe entenderse rápido: informarte, posicionarte y construir reputación sin fricción.</p>
+            </div>
+
+            <div class="mt-6 grid gap-4 lg:grid-cols-3">
+              <article class="step-card">
+                <div class="mini-label">Paso 1</div>
+                <h3 class="mt-3 text-xl font-semibold">Lee los debates</h3>
+                <p class="mt-3 text-sm leading-6 text-muted">Cada día recibes temas resumidos con el contexto justo para entender qué se discute y qué está realmente en juego.</p>
+              </article>
+
+              <article class="step-card">
+                <div class="mini-label">Paso 2</div>
+                <h3 class="mt-3 text-xl font-semibold">Opina y vota</h3>
+                <p class="mt-3 text-sm leading-6 text-muted">Entras, tomas postura, comentas y ves cómo se mueve la comunidad a tu alrededor en tiempo real.</p>
+              </article>
+
+              <article class="step-card">
+                <div class="mini-label">Paso 3</div>
+                <h3 class="mt-3 text-xl font-semibold">Gana reputación</h3>
+                <p class="mt-3 text-sm leading-6 text-muted">Tus aportes útiles suben tu nivel, te dan badges y te colocan en el ranking como una voz con criterio.</p>
+              </article>
+            </div>
+          </section>
+
+          <!-- CTA final -->
+          <section class="surface overflow-hidden bg-slate-900 px-6 py-8 text-white sm:px-8">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div class="mini-label text-white/60">Listo para participar</div>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight">No leas la actualidad en modo pasivo. Entra y toma posición.</h2>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Haz clic en un debate, vota tu postura y empieza a construir tu reputación en una comunidad pensada para conversar mejor.</p>
+              </div>
+              <div class="flex flex-col gap-3 sm:flex-row">
+                <a href="#debates" class="primary-btn">Quiero ver los debates</a>
+                <a href="#ranking" class="secondary-btn border-white/20 bg-white/10 text-white hover:border-white/40 hover:text-white">Explorar el ranking</a>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const liveEvents = [
+        {
+          icon: "🗳️",
+          iconClass: "bg-accent-soft",
+          text: 'Sofía acaba de votar <span class="text-accent">En contra</span> en “Tratamientos genéticos”',
+          time: "hace 8 segundos"
+        },
+        {
+          icon: "💬",
+          iconClass: "bg-slate-100",
+          text: 'Un comentario de @diego_datos está subiendo en “Dependencia tecnológica europea”',
+          time: "hace 19 segundos"
+        },
+        {
+          icon: "🔥",
+          iconClass: "bg-amber-100",
+          text: '“Alquiler turístico” entra en el top de debates polarizados del día',
+          time: "ahora mismo"
+        },
+        {
+          icon: "⚡",
+          iconClass: "bg-emerald-100",
+          text: 'La conversación sobre reconocimiento facial suma 23 votos en menos de un minuto',
+          time: "hace 32 segundos"
+        }
+      ];
+
+      const liveFeed = document.getElementById("live-feed");
+      let liveIndex = 0;
+
+      const renderLiveFeed = () => {
+        liveFeed.innerHTML = liveEvents
+          .map(
+            (event) => `
+              <div class="live-row">
+                <div class="mt-1 flex h-9 w-9 items-center justify-center rounded-2xl ${event.iconClass} text-lg">${event.icon}</div>
+                <div>
+                  <div class="font-medium">${event.text}</div>
+                  <div class="mt-1 text-sm text-muted">${event.time}</div>
+                </div>
+              </div>
+            `
+          )
+          .join("");
+      };
+
+      setInterval(() => {
+        liveEvents.push(liveEvents.splice(liveIndex % liveEvents.length, 1)[0]);
+        liveIndex += 1;
+        renderLiveFeed();
+      }, 3200);
+    </script>
+  </body>
+</html>
