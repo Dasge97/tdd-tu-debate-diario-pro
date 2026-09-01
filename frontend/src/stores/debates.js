@@ -109,6 +109,10 @@ export const useDebatesStore = defineStore("debates", {
      * debates: la lista de hoy no se pagina.
      */
     async cargarMasHoy() {
+      // Todavia no se sabe: la primera carga sigue en marcha.
+      if (this.loadingToday || !this.today.length) return null;
+
+      // La lista de hoy no se pagina; solo la de los ultimos debates.
       if (!this.todayEsReciente) return 0;
 
       const siguiente = this.paginaHoy + 1;

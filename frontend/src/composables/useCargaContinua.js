@@ -3,8 +3,10 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 /**
  * Carga la pagina siguiente cuando el final de la lista se acerca a la pantalla.
  *
- * alCargarMas debe devolver cuantos elementos ha traido. Si devuelve cero, se
- * entiende que no queda nada y se deja de pedir.
+ * alCargarMas devuelve cuantos elementos ha traido. Si devuelve cero, se
+ * entiende que no queda nada y se deja de pedir. Si devuelve null significa
+ * que todavia no se puede pedir, porque la primera carga sigue en marcha; en
+ * ese caso se reintenta mientras el final de la lista siga a la vista.
  */
 export function useCargaContinua(alCargarMas) {
   const centinela = ref(null);
@@ -12,6 +14,8 @@ export function useCargaContinua(alCargarMas) {
   const seAcabo = ref(false);
 
   let observador = null;
+  let visible = false;
+  let reintento = null;
 
   const cargar = async () => {
     if (cargando.value || seAcabo.value) return;
@@ -19,7 +23,24 @@ export function useCargaContinua(alCargarMas) {
     cargando.value = true;
     try {
       const traidos = await alCargarMas();
-      if (!traidos) seAcabo.value = true;
+
+      if (traidos === null) {
+        // La lista aun no esta lista: se vuelve a mirar en un momento.
+        if (visible) {
+          reintento = window.setTimeout(cargar, 400);
+        }
+        return;
+      }
+
+      if (!traidos) {
+        seAcabo.value = true;
+        return;
+      }
+
+      // Si el final sigue a la vista tras anadir, se pide otra tanda.
+      if (visible) {
+        reintento = window.setTimeout(cargar, 150);
+      }
     } catch (_) {
       seAcabo.value = true;
     } finally {
@@ -32,7 +53,8 @@ export function useCargaContinua(alCargarMas) {
 
     observador = new IntersectionObserver(
       (entradas) => {
-        if (entradas[0].isIntersecting) cargar();
+        visible = entradas[0].isIntersecting;
+        if (visible) cargar();
       },
       // Empieza a pedir antes de llegar al final, para que no se note el corte.
       { rootMargin: "400px 0px" }
@@ -41,7 +63,10 @@ export function useCargaContinua(alCargarMas) {
     observador.observe(centinela.value);
   });
 
-  onBeforeUnmount(() => observador?.disconnect());
+  onBeforeUnmount(() => {
+    observador?.disconnect();
+    window.clearTimeout(reintento);
+  });
 
   return { centinela, cargando, seAcabo };
 }
