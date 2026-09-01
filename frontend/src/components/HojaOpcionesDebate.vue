@@ -130,7 +130,17 @@ const cerrar = () => {
       </button>
 
       <button type="button" class="hoja-opcion" @click="guardar">
-        <span class="material-symbols-rounded">favorite</span>
+        <!-- El corazon va relleno y en rojo cuando el debate esta guardado. -->
+        <span
+          class="material-symbols-rounded"
+          :style="
+            favorites.isFavorite(debate.id)
+              ? `color: var(--tdd-contra); font-variation-settings: 'FILL' 1`
+              : ''
+          "
+        >
+          favorite
+        </span>
         {{ favorites.isFavorite(debate.id) ? "Quitar de favoritos" : "Guardar" }}
       </button>
 
