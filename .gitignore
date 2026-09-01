@@ -33,3 +33,6 @@ desktop.ini
 
 # Web compilada de /app (se genera en el build de Docker)
 backend/public/app/
+
+# Documento operativo del servidor, no se publica
+README_DEPLOY.md
