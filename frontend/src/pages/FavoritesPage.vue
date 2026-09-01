@@ -1,45 +1,42 @@
 <script setup>
 import { onMounted } from "vue";
-import { useRouter } from "vue-router";
-import DebateCard from "@/components/DebateCard.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import { useFavoritesStore } from "@/stores/favorites";
-import { useUsersStore } from "@/stores/users";
+import { formatDate } from "@/utils/format";
 
-const router = useRouter();
-const favoritesStore = useFavoritesStore();
-const usersStore = useUsersStore();
+const favorites = useFavoritesStore();
 
-const openDebate = (id) => router.push({ name: "debate", params: { id } });
-
-onMounted(async () => {
-  if (usersStore.isAuthenticated) {
-    await favoritesStore.fetchFavorites();
-  }
-});
+onMounted(() => favorites.load(true));
 </script>
 
 <template>
-  <q-page class="q-px-md q-pb-lg">
-    <h1 class="section-title q-mt-md q-mb-md">Favoritos</h1>
+  <section>
+    <div class="section-head">
+      <h2 class="section-title">Debates guardados</h2>
+      <span class="text-muted" style="font-size: 0.85rem">{{ favorites.items.length }}</span>
+    </div>
 
-    <q-banner v-if="!usersStore.isAuthenticated" rounded class="bg-amber-1 text-amber-10 q-mb-md">
-      Inicia sesión para gestionar tus debates guardados.
-    </q-banner>
+    <div v-if="favorites.items.length" class="surface list-card">
+      <RouterLink
+        v-for="favorite in favorites.items"
+        :key="favorite.id"
+        class="list-row"
+        :to="{ name: 'debate', params: { id: favorite.debate.id } }"
+      >
+        <span class="material-symbols-rounded" style="color: #e74c3c">favorite</span>
+        <span class="list-row-main">
+          <span class="list-row-title" style="white-space: normal">{{ favorite.debate.title }}</span>
+          <span class="list-row-sub">{{ formatDate(favorite.debate.dayDate) }}</span>
+        </span>
+        <span class="material-symbols-rounded" style="color: #b9c0ca">chevron_right</span>
+      </RouterLink>
+    </div>
 
-    <q-skeleton v-if="favoritesStore.loading" type="rect" height="140px" class="q-mb-sm" />
-    <DebateCard
-      v-for="debate in favoritesStore.items"
-      :key="debate.id"
-      :debate="debate"
-      @open="openDebate"
+    <EmptyState
+      v-else
+      icon="favorite"
+      title="Sin favoritos"
+      text="Toca el corazón de un debate para guardarlo y leerlo más tarde."
     />
-
-    <q-banner
-      v-if="usersStore.isAuthenticated && !favoritesStore.loading && favoritesStore.items.length === 0"
-      class="bg-grey-2"
-      rounded
-    >
-      Aún no guardaste debates en favoritos.
-    </q-banner>
-  </q-page>
+  </section>
 </template>

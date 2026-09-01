@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+
+    App\Service\JwtService:
+        arguments:
+            $jwtSecret: '%env(JWT_SECRET)%'
+
+    App\Controller\Api\WorkerController:
+        arguments:
+            $workerApiKey: '%env(WORKER_API_KEY)%'
+        tags: ['controller.service_arguments']
+
+    App\Command\WebSocketServerCommand:
+        arguments:
+            $wsPort: '%env(int:WS_PORT)%'
+        tags:
+            - { name: console.command }

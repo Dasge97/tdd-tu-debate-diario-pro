@@ -1,109 +1,89 @@
+version: '3.9'
+
 services:
   db:
-    image: mysql:8.4
+    image: mysql:8.0
+    container_name: tdd_db
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: tdd_app
+      MYSQL_USER: tdd_user
+      MYSQL_PASSWORD: tdd_pass
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD} --silent"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_pass"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: Dockerfile
+    container_name: tdd_backend
     restart: unless-stopped
-    env_file:
-      - .env
+    ports:
+      - "3000:3000"
     environment:
-      APP_PORT: ${APP_PORT:-3000}
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_NAME: ${DB_NAME:-tdd_db}
-      DB_USER: ${DB_USER:-tdd_user}
-      DB_PASSWORD: ${DB_PASSWORD:-tdd_password}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      OPENCODE_SHARED_DIR: ${OPENCODE_SHARED_DIR:-/shared/jobs}
+      DATABASE_URL: "mysql://tdd_user:tdd_pass@db:3306/tdd_app?serverVersion=8.0.32&charset=utf8mb4"
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-changeme_jwt}
+      WORKER_API_KEY: ${WORKER_API_KEY:-changeme_worker}
+      CORS_ALLOW_ORIGIN: '${CORS_ALLOW_ORIGIN:-^https?://(localhost(:[0-9]+)?|([a-z0-9-]+\.)?tudebatediario\.com)$}'
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "${APP_PORT:-3000}:3000"
     volumes:
-      - ./backend/uploads:/app/uploads
-      - ./shared:/shared
+      - uploads:/var/www/html/public/uploads
 
-  frontend:
+  backend-ws:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: Dockerfile
+    container_name: tdd_backend_ws
     restart: unless-stopped
-    depends_on:
-      - backend
-    environment:
-      VITE_API_BASE_URL: http://localhost:${APP_PORT:-3000}
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "mysql://tdd_user:tdd_pass@db:3306/tdd_app?serverVersion=8.0.32&charset=utf8mb4"
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-changeme_jwt}
+      WS_PORT: 8080
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["php", "bin/console", "app:websocket-server"]
 
-  n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tdd_worker
     restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "${N8N_PORT:-5689}:5678"
     environment:
-      N8N_HOST: localhost
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      N8N_EDITOR_BASE_URL: http://localhost:${N8N_PORT:-5689}
-      WEBHOOK_URL: http://localhost:${N8N_PORT:-5689}
-      GENERIC_TIMEZONE: Europe/Madrid
-      TZ: Europe/Madrid
-      N8N_SECURE_COOKIE: "false"
-      N8N_BASIC_AUTH_ACTIVE: "${N8N_BASIC_AUTH_ACTIVE:-true}"
-      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
-      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-tdd}
-      NEWS_API_BASE_URL: http://backend:3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: tdd_app
+      DB_USER: tdd_user
+      DB_PASSWORD: tdd_pass
       BACKEND_API_BASE_URL: http://backend:3000
-    volumes:
-      - ./n8n:/workflows
-      - n8n_data:/home/node/.n8n
-
-  opencode:
-    build:
-      context: ./opencode
-    restart: unless-stopped
+      WORKER_API_KEY: ${WORKER_API_KEY:-changeme_worker}
+      OPENCODE_PROVIDER_ID: openai
+      OPENCODE_API_KEY: ${OPENAI_API_KEY:-}
+      OPENCODE_MODEL_ID: gpt-4o
+      LOG_LEVEL: info
     depends_on:
-      - backend
-    environment:
-      OPENCODE_SHARED_DIR: ${OPENCODE_SHARED_DIR:-/shared/jobs}
-      OPENCODE_AUTO_PROCESS: ${OPENCODE_AUTO_PROCESS:-true}
-      OPENCODE_AUTO_COMPLETE_JOB: ${OPENCODE_AUTO_COMPLETE_JOB:-true}
-      OPENCODE_JOB_POLL_MS: ${OPENCODE_JOB_POLL_MS:-5000}
-      BACKEND_API_BASE_URL: ${BACKEND_API_BASE_URL:-http://backend:3000}
-      NEWS_API_BASE_URL: ${BACKEND_API_BASE_URL:-http://backend:3000}
-      OPENCODE_PROVIDER_ID: ${OPENCODE_PROVIDER_ID:-opencode}
-      OPENCODE_PROVIDER_NAME: ${OPENCODE_PROVIDER_NAME:-OpenCode}
-      OPENCODE_PROVIDER_NPM: ${OPENCODE_PROVIDER_NPM:-__builtin__}
-      OPENCODE_BASE_URL: ${OPENCODE_BASE_URL:-}
-      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
-      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
-      OPENCODE_MODEL_ID: ${OPENCODE_MODEL_ID:-minimax-m2.5-free}
-    volumes:
-      - ./shared:/shared
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
 
 volumes:
-  mysql_data:
-  n8n_data:
+  db_data:
+  uploads:

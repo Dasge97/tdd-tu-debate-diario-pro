@@ -1,195 +1,138 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import AppSelect from "@/components/AppSelect.vue";
-import { debatesService } from "@/services/debates.service";
-import { useToastStore } from "@/stores/toast";
-import { useUsersStore } from "@/stores/users";
+import { debatesService } from "@/services";
+import { useUiStore } from "@/stores/ui";
+import { errorMessage } from "@/api/client";
 
 const router = useRouter();
-const toastStore = useToastStore();
-const usersStore = useUsersStore();
+const ui = useUiStore();
 
-const loadingCategories = ref(false);
-const creatingDebate = ref(false);
-const categoryOptions = ref([]);
-const submitError = ref("");
-
-const form = reactive({
+/* El servidor solo exige titulo y contexto; el resto es opcional. */
+const form = ref({
   title: "",
   question: "",
   cardSummary: "",
   context: "",
-  category: "",
+  sourceName: "",
   sourceUrl: ""
 });
 
-const isAuthenticated = computed(() => usersStore.isAuthenticated);
-const contextCount = computed(() => form.context.trim().length);
-const summaryCount = computed(() => form.cardSummary.trim().length);
+const sending = ref(false);
+const error = ref(null);
 
-const humanizeCategory = (value) => {
-  const text = String(value || "").trim();
-  if (!text) return "";
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
+const canSubmit = computed(
+  () => form.value.title.trim().length >= 10 && form.value.context.trim().length >= 30
+);
 
-const loadCategories = async () => {
-  loadingCategories.value = true;
+const submit = async () => {
+  if (!canSubmit.value || sending.value) return;
+
+  sending.value = true;
+  error.value = null;
+
+  const payload = Object.fromEntries(
+    Object.entries(form.value)
+      .map(([key, value]) => [key, value.trim()])
+      .filter(([, value]) => value !== "")
+  );
+
   try {
-    const categories = await debatesService.getCategories();
-    categoryOptions.value = categories.map((value) => ({
-      label: humanizeCategory(value),
-      value
-    }));
-
-    if (!form.category && categoryOptions.value.length > 0) {
-      form.category = categoryOptions.value[0].value;
-    }
-  } catch (_error) {
-    toastStore.error("No se pudieron cargar las categorías disponibles.");
+    const debate = await debatesService.propose(payload);
+    ui.success("Propuesta enviada. Gracias por participar.");
+    router.replace({ name: "debate", params: { id: debate.id } });
+  } catch (requestError) {
+    error.value = errorMessage(requestError, "No hemos podido enviar la propuesta.");
   } finally {
-    loadingCategories.value = false;
+    sending.value = false;
   }
 };
-
-const resetForm = () => {
-  form.title = "";
-  form.question = "";
-  form.cardSummary = "";
-  form.context = "";
-  form.sourceUrl = "";
-  form.category = categoryOptions.value[0]?.value || "";
-  submitError.value = "";
-};
-
-const submitProposal = async () => {
-  submitError.value = "";
-
-  if (!isAuthenticated.value) {
-    toastStore.info("Necesitas iniciar sesión para publicar un debate.");
-    router.push({ name: "home" });
-    return;
-  }
-
-  creatingDebate.value = true;
-  try {
-    const debate = await debatesService.createProposal({
-      title: form.title,
-      question: form.question,
-      cardSummary: form.cardSummary,
-      context: form.context,
-      category: form.category,
-      sourceUrl: form.sourceUrl
-    });
-
-    toastStore.success("Tu debate ya está publicado.");
-    router.push({ name: "debate", params: { id: debate.id } });
-  } catch (error) {
-    submitError.value = error?.response?.data?.error || "No se pudo crear el debate.";
-    toastStore.error(submitError.value);
-  } finally {
-    creatingDebate.value = false;
-  }
-};
-
-onMounted(loadCategories);
 </script>
 
 <template>
-  <q-page class="q-px-md q-pb-xl propose-debate-page">
-    <div class="propose-debate-wrap">
-      <h1 class="section-title q-mt-md q-mb-sm">Proponer debate</h1>
-      <p class="propose-debate-intro q-mb-lg">
-        Publica un debate con el mismo formato que los editoriales de TDD: una pregunta clara, un resumen breve y un contexto que ayude a discutir con criterio.
+  <section>
+    <p class="text-muted" style="margin: 0 2px 16px; line-height: 1.6">
+      Propón un tema de actualidad que merezca debate. Cuanto mejor expliques el contexto,
+      más fácil será que la comunidad argumente.
+    </p>
+
+    <form class="surface surface-pad" @submit.prevent="submit">
+      <p v-if="error" class="form-error">{{ error }}</p>
+
+      <label class="field">
+        <span class="field-label">Título</span>
+        <input
+          v-model="form.title"
+          class="input"
+          type="text"
+          required
+          maxlength="180"
+          placeholder="El titular del debate"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field-label">La pregunta</span>
+        <input
+          v-model="form.question"
+          class="input"
+          type="text"
+          maxlength="250"
+          placeholder="¿Qué hay que decidir exactamente?"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Idea central</span>
+        <input
+          v-model="form.cardSummary"
+          class="input"
+          type="text"
+          maxlength="250"
+          placeholder="Una frase que resuma el asunto"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Contexto</span>
+        <textarea
+          v-model="form.context"
+          class="textarea"
+          required
+          rows="7"
+          placeholder="Explica los hechos, quién está implicado y por qué importa ahora."
+        />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Fuente (opcional)</span>
+        <input
+          v-model="form.sourceName"
+          class="input"
+          type="text"
+          maxlength="120"
+          placeholder="Nombre del medio"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Enlace a la fuente (opcional)</span>
+        <input
+          v-model="form.sourceUrl"
+          class="input"
+          type="url"
+          inputmode="url"
+          placeholder="https://"
+        />
+      </label>
+
+      <button class="btn btn-primary btn-block" type="submit" :disabled="!canSubmit || sending">
+        {{ sending ? "Enviando…" : "Enviar propuesta" }}
+      </button>
+
+      <p v-if="!canSubmit" class="text-muted" style="margin: 10px 0 0; font-size: 0.82rem">
+        Necesitas un título de al menos 10 caracteres y un contexto de al menos 30.
       </p>
-
-      <q-card flat bordered class="debate-surface propose-debate-card">
-        <q-card-section>
-          <div class="propose-debate-head q-mb-lg">
-            <div>
-              <div class="text-subtitle1 text-weight-medium">Tu debate se publicará con tu perfil</div>
-              <div class="text-caption text-grey-7 propose-debate-copy">
-                Piensa en un tema que merezca conversación pública y redacta la ficha como si fueras la primera persona que quiere abrir el debate.
-              </div>
-            </div>
-          </div>
-
-          <div v-if="!isAuthenticated" class="propose-debate-warning q-mb-md">
-            Necesitas iniciar sesión para publicar debates con tu perfil.
-          </div>
-
-          <div class="propose-debate-grid">
-            <q-input
-              v-model="form.title"
-              outlined
-              label="Título del debate"
-              hint="El titular que verá la comunidad en la tarjeta y en la página del debate."
-              class="propose-field propose-field-full"
-            />
-
-            <q-input
-              v-model="form.question"
-              outlined
-              label="Pregunta central"
-              hint="La pregunta que quieres que la gente responda al entrar al debate."
-              class="propose-field propose-field-full"
-            />
-
-            <AppSelect
-              v-model="form.category"
-              :options="categoryOptions"
-              :loading="loadingCategories"
-              label="Categoría"
-              class="propose-field"
-            />
-
-            <q-input
-              v-model="form.sourceUrl"
-              outlined
-              label="Enlace de referencia (opcional)"
-              hint="Puedes añadir una noticia o artículo de apoyo, aunque no se mostrará de forma destacada en la ficha."
-              class="propose-field"
-            />
-
-            <q-input
-              v-model="form.cardSummary"
-              outlined
-              type="textarea"
-              autogrow
-              label="Resumen breve"
-              hint="Este texto aparecerá en la portada o en listados."
-              class="propose-field propose-field-full"
-            />
-            <div class="propose-field-counter">{{ summaryCount }} caracteres</div>
-
-            <q-input
-              v-model="form.context"
-              outlined
-              type="textarea"
-              autogrow
-              label="Contexto del debate"
-              hint="Explica qué ha pasado, qué está en juego y por qué merece discusión."
-              class="propose-field propose-field-full"
-            />
-            <div class="propose-field-counter">{{ contextCount }} caracteres</div>
-          </div>
-
-          <div v-if="submitError" class="text-negative text-caption q-mt-md">{{ submitError }}</div>
-
-          <div class="propose-debate-actions q-mt-lg">
-            <q-btn flat color="primary" label="Limpiar" @click="resetForm" />
-            <q-btn
-              color="primary"
-              unelevated
-              :loading="creatingDebate"
-              :disable="!isAuthenticated"
-              label="Publicar debate"
-              @click="submitProposal"
-            />
-          </div>
-        </q-card-section>
-      </q-card>
-    </div>
-  </q-page>
+    </form>
+  </section>
 </template>

@@ -1,131 +1,127 @@
-import { nextTick } from "vue";
 import { defineStore } from "pinia";
-import { debatesService } from "@/services/debates.service";
+import { debatesService, participationService } from "@/services";
+import { errorMessage } from "@/api/client";
 
+/**
+ * Debates y sus posiciones.
+ *
+ * La API no devuelve las posiciones dentro del debate: hay que pedirlas aparte
+ * a /debates/{id}/positions, que responde {support, oppose, neutral}. Aqui se
+ * cachean por id de debate y se convierten a los porcentajes que pinta la barra.
+ */
 export const useDebatesStore = defineStore("debates", {
   state: () => ({
     today: [],
+    topWeek: [],
+    ticker: [],
     byId: {},
-    commentsByDebate: {},
-    searchResults: [],
-    trending: [],
+    positions: {},
     loadingToday: false,
-    loadingDebate: false,
-    loadingComments: false,
-    loadingSearch: false,
-    loadingTrending: false,
-    error: ""
+    loadingWeek: false,
+    error: null
   }),
+
+  getters: {
+    /** Porcentajes redondeados para la barra de posiciones. */
+    percentagesFor: (state) => (debateId) => {
+      const counts = state.positions[debateId];
+      if (!counts) return null;
+
+      const total =
+        Number(counts.support || 0) +
+        Number(counts.oppose || 0) +
+        Number(counts.neutral || 0);
+
+      if (total === 0) {
+        return { favor: 0, contra: 0, neutral: 0, total: 0 };
+      }
+
+      return {
+        favor: Math.round((counts.support / total) * 100),
+        contra: Math.round((counts.oppose / total) * 100),
+        neutral: Math.round((counts.neutral / total) * 100),
+        total
+      };
+    }
+  },
+
   actions: {
-    async fetchToday() {
+    cache(debates) {
+      debates.forEach((debate) => {
+        this.byId[debate.id] = { ...this.byId[debate.id], ...debate };
+      });
+    },
+
+    async fetchToday(force = false) {
+      if (this.today.length && !force) return this.today;
       this.loadingToday = true;
-      this.error = "";
+      this.error = null;
       try {
-        this.today = await debatesService.getToday();
+        const data = await debatesService.today();
+        this.today = data;
+        this.cache(data);
+        this.loadPositionsFor(data);
+        return data;
       } catch (error) {
-        this.error = error?.response?.data?.error || "No se pudieron cargar los debates de hoy.";
+        this.error = errorMessage(error, "No hemos podido cargar los debates de hoy.");
+        return [];
       } finally {
         this.loadingToday = false;
       }
     },
-    async fetchDebate(id) {
-      this.loadingDebate = true;
+
+    async fetchTopWeek(force = false) {
+      if (this.topWeek.length && !force) return this.topWeek;
+      this.loadingWeek = true;
       try {
-        const debate = await debatesService.getById(id);
-        this.byId[id] = debate;
-      } finally {
-        this.loadingDebate = false;
-      }
-    },
-    async fetchComments(debateId) {
-      this.loadingComments = true;
-      try {
-        this.commentsByDebate[debateId] = await debatesService.getComments(debateId);
-      } finally {
-        this.loadingComments = false;
-      }
-    },
-    async createComment({ debateId, content, parentId = null }) {
-      const created = await debatesService.postComment({ debateId, content, parentId });
-      const current = this.commentsByDebate[debateId] || [];
-      this.commentsByDebate[debateId] = [...current, created];
-      return created;
-    },
-    async voteComment({ debateId, commentId, value = 1 }) {
-      const current = this.commentsByDebate[debateId] || [];
-      const previousComments = current.map((comment) => ({ ...comment }));
-      const normalizedValue = Number(value) < 0 ? -1 : 1;
-
-      this.commentsByDebate[debateId] = current.map((comment) => {
-        if (Number(comment.id) !== Number(commentId)) return comment;
-
-        const previousVote = Number(comment.currentUserVote || 0);
-        if (previousVote === normalizedValue) {
-          return comment;
-        }
-
-        let upvotes = Number(comment.upvotes || 0);
-        let downvotes = Number(comment.downvotes || 0);
-        let score = Number(comment.score || 0);
-
-        if (previousVote > 0) upvotes = Math.max(0, upvotes - 1);
-        if (previousVote < 0) downvotes = Math.max(0, downvotes - 1);
-
-        if (normalizedValue > 0) upvotes += 1;
-        if (normalizedValue < 0) downvotes += 1;
-
-        score += normalizedValue - previousVote;
-
-        return {
-          ...comment,
-          score,
-          upvotes,
-          downvotes,
-          currentUserVote: normalizedValue
-        };
-      });
-
-      await nextTick();
-
-      try {
-        const updated = await debatesService.voteComment(commentId, normalizedValue);
-        this.commentsByDebate[debateId] = (this.commentsByDebate[debateId] || []).map((comment) =>
-          Number(comment.id) === Number(commentId)
-            ? {
-                ...comment,
-                score: Number(updated.score ?? comment.score ?? 0),
-                upvotes: Number(updated.upvotes ?? comment.upvotes ?? 0),
-                downvotes: Number(updated.downvotes ?? comment.downvotes ?? 0),
-                currentUserVote: Number(updated.currentUserVote ?? normalizedValue)
-              }
-            : comment
-        );
-        return updated;
+        const data = await debatesService.topWeek();
+        this.topWeek = data;
+        this.cache(data);
+        this.loadPositionsFor(data);
+        return data;
       } catch (error) {
-        this.commentsByDebate[debateId] = previousComments;
-        throw error;
-      }
-    },
-    async setPosition({ debateId, position }) {
-      await debatesService.postPosition({ debateId, position });
-      await this.fetchDebate(debateId);
-      await this.fetchToday();
-    },
-    async search(params) {
-      this.loadingSearch = true;
-      try {
-        this.searchResults = await debatesService.search(params);
+        this.error = errorMessage(error, "No hemos podido cargar los debates de la semana.");
+        return [];
       } finally {
-        this.loadingSearch = false;
+        this.loadingWeek = false;
       }
     },
-    async fetchTrending(limit = 10) {
-      this.loadingTrending = true;
+
+    async fetchTicker() {
       try {
-        this.trending = await debatesService.getTrending(limit);
-      } finally {
-        this.loadingTrending = false;
+        const data = await debatesService.ticker();
+        this.ticker = data;
+        this.cache(data);
+        return data;
+      } catch (_) {
+        return [];
       }
+    },
+
+    async fetchDebate(id) {
+      const debate = await debatesService.byId(id);
+      this.byId[debate.id] = debate;
+      return debate;
+    },
+
+    async fetchPositions(debateId) {
+      const counts = await participationService.getPositions(debateId);
+      this.positions[debateId] = counts;
+      return counts;
+    },
+
+    /** Carga en paralelo las posiciones de una lista, sin bloquear el pintado. */
+    loadPositionsFor(debates) {
+      debates
+        .filter((debate) => !this.positions[debate.id])
+        .forEach((debate) => {
+          this.fetchPositions(debate.id).catch(() => {});
+        });
+    },
+
+    async setPosition(debateId, position) {
+      await participationService.setPosition(debateId, position);
+      await this.fetchPositions(debateId);
     }
   }
 });

@@ -1,381 +1,199 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useFriendsStore } from "@/stores/friends";
-import { useUsersStore } from "@/stores/users";
+import UserAvatar from "@/components/UserAvatar.vue";
+import EmptyState from "@/components/EmptyState.vue";
+import { socialService } from "@/services";
+import { useAuthStore } from "@/stores/auth";
 import { useChatStore } from "@/stores/chat";
-import { usersService } from "@/services/users.service";
-import { useToastStore } from "@/stores/toast";
+import { useUiStore } from "@/stores/ui";
+import { errorMessage } from "@/api/client";
 
 const router = useRouter();
-const friendsStore = useFriendsStore();
-const usersStore = useUsersStore();
-const chatStore = useChatStore();
-const toastStore = useToastStore();
+const auth = useAuthStore();
+const chat = useChatStore();
+const ui = useUiStore();
 
-const activeTab = ref("friends");
-const query = ref("");
-const loadingUsers = ref(false);
-const users = ref([]);
-const page = ref(1);
-const pageSize = ref(12);
-const totalPages = ref(1);
+const friends = ref([]);
+const pending = ref([]);
+const loading = ref(true);
+const username = ref("");
+const sending = ref(false);
 
-onMounted(async () => {
-  if (!usersStore.isAuthenticated) return;
-  await Promise.all([friendsStore.fetchFriends(), friendsStore.fetchRequests(), fetchUsers("", 1)]);
-});
+/**
+ * Una amistad tiene solicitante y destinatario. Para pintar la lista siempre
+ * interesa la otra persona, sea cual sea de los dos lados.
+ */
+const otherUser = (friendship) =>
+  friendship.requester.id === auth.user?.id ? friendship.addressee : friendship.requester;
 
-const goProfile = (username) => {
-  router.push({ name: "perfil", params: { username } });
-};
+/* Solo se pueden aceptar las solicitudes que ha enviado otra persona. */
+const incoming = computed(() =>
+  pending.value.filter((friendship) => friendship.requester.id !== auth.user?.id)
+);
 
-const avatarLetter = (value) => (value || "?").slice(0, 1).toUpperCase();
+const outgoing = computed(() =>
+  pending.value.filter((friendship) => friendship.requester.id === auth.user?.id)
+);
 
-const relationLabel = (userId) => {
-  const status = friendsStore.relationStatusByUserId[userId] || "none";
-  if (status === "friends") return "Amigos";
-  if (status === "pending_sent") return "Solicitud enviada";
-  if (status === "pending_received") return "Te envió solicitud";
-  if (status === "rejected") return "Solicitud rechazada";
-  return "Agregar amigo";
-};
-
-const canSendRequest = (userId) => {
-  const status = friendsStore.relationStatusByUserId[userId] || "none";
-  return status === "none";
-};
-
-const loadRelationStatuses = async () => {
-  if (!usersStore.isAuthenticated) return;
-  await Promise.all(
-    users.value
-      .filter((user) => Number(user.id) !== Number(usersStore.me?.id))
-      .map((user) => friendsStore.fetchStatus(user.id))
-  );
-};
-
-const fetchUsers = async (q = "", requestedPage = 1) => {
-  loadingUsers.value = true;
+const load = async () => {
+  loading.value = true;
   try {
-    const data = await usersService.search(q, pageSize.value, requestedPage);
-    users.value = data.items || [];
-    page.value = Number(data.page || requestedPage || 1);
-    totalPages.value = Number(data.totalPages || 1);
-    await loadRelationStatuses();
+    const data = await socialService.friends();
+    friends.value = data.friends || [];
+    pending.value = data.pending || [];
   } catch (error) {
-    toastStore.error(error?.response?.data?.error || "No se pudieron cargar usuarios.");
+    ui.error(errorMessage(error, "No hemos podido cargar tus amigos."));
   } finally {
-    loadingUsers.value = false;
+    loading.value = false;
   }
 };
 
-const searchUsers = async () => {
-  activeTab.value = "add";
-  await fetchUsers(query.value.trim(), 1);
-};
+onMounted(load);
 
-const showAllUsers = async () => {
-  activeTab.value = "all";
-  query.value = "";
-  await fetchUsers("", 1);
-};
+const request = async () => {
+  const name = username.value.trim();
+  if (!name || sending.value) return;
 
-const onChangePage = async (nextPage) => {
-  await fetchUsers(activeTab.value === "add" ? query.value.trim() : "", Number(nextPage) || 1);
-};
-
-const sendRequest = async (userId) => {
-  if (!usersStore.isAuthenticated) {
-    toastStore.info("Inicia sesión para agregar amigos.");
-    return;
-  }
+  sending.value = true;
   try {
-    await friendsStore.sendRequest(userId);
-    toastStore.success("Solicitud de amistad enviada.");
+    await socialService.requestByUsername(name);
+    username.value = "";
+    ui.success("Solicitud enviada.");
+    await load();
   } catch (error) {
-    toastStore.error(error?.response?.data?.error || "No se pudo enviar la solicitud.");
+    ui.error(errorMessage(error, "No hemos podido enviar la solicitud."));
+  } finally {
+    sending.value = false;
   }
 };
 
-const visiblePages = computed(() => {
-  const total = totalPages.value;
-  const current = page.value;
-  const start = Math.max(1, current - 2);
-  const end = Math.min(total, start + 4);
-  return Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
-});
+const accept = async (friendship) => {
+  try {
+    await socialService.accept(friendship.requester.id);
+    ui.success("Solicitud aceptada.");
+    await load();
+  } catch (error) {
+    ui.error(errorMessage(error, "No hemos podido aceptar la solicitud."));
+  }
+};
+
+const remove = async (friendship) => {
+  const other = otherUser(friendship);
+  if (!window.confirm(`¿Quitar a ${other.username} de tus amigos?`)) return;
+
+  try {
+    await socialService.remove(other.id);
+    await load();
+  } catch (error) {
+    ui.error(errorMessage(error, "No hemos podido completar la acción."));
+  }
+};
+
+const openChat = async (friendship) => {
+  try {
+    const conversation = await chat.openWith(otherUser(friendship).id);
+    router.push({ name: "chat", params: { id: conversation.id } });
+  } catch (error) {
+    ui.error(errorMessage(error, "No hemos podido abrir la conversación."));
+  }
+};
 </script>
 
 <template>
-  <q-page class="q-px-md q-pb-lg">
-    <h1 class="section-title q-mt-md q-mb-md">Amigos</h1>
+  <section>
+    <form class="surface surface-pad" style="margin-bottom: 18px" @submit.prevent="request">
+      <label class="field" style="margin-bottom: 12px">
+        <span class="field-label">Añadir por nombre de usuario</span>
+        <input
+          v-model="username"
+          class="input"
+          type="text"
+          autocapitalize="none"
+          autocomplete="off"
+          placeholder="Su nombre exacto"
+        />
+      </label>
+      <button class="btn btn-primary btn-block" type="submit" :disabled="!username.trim() || sending">
+        {{ sending ? "Enviando…" : "Enviar solicitud" }}
+      </button>
+    </form>
 
-    <div v-if="!usersStore.isAuthenticated" class="alert alert-warning friends-alert" role="alert">
-      Inicia sesión para ver y gestionar tus amistades.
-    </div>
+    <div v-if="loading" class="spinner" />
 
-    <div v-else class="friends-page">
-      <ul class="nav nav-tabs friends-tabs">
-        <li class="nav-item">
-          <button
-            type="button"
-            class="nav-link"
-            :class="{ active: activeTab === 'friends' }"
-            @click="activeTab = 'friends'"
-          >
-            Amigos
-          </button>
-        </li>
-        <li class="nav-item">
-          <button
-            type="button"
-            class="nav-link"
-            :class="{ active: activeTab === 'add' }"
-            @click="activeTab = 'add'"
-          >
-            Añadir amigo
-          </button>
-        </li>
-        <li class="nav-item">
-          <button
-            type="button"
-            class="nav-link"
-            :class="{ active: activeTab === 'all' }"
-            @click="showAllUsers"
-          >
-            Ver todos
-          </button>
-        </li>
-      </ul>
-
-      <div class="tab-content friends-tab-content">
-        <div v-if="activeTab === 'friends'" class="tab-pane fade show active">
-          <div class="row g-3">
-            <div class="col-12 col-lg-5">
-              <div class="card debate-surface friends-fixed-card">
-                <div class="card-header friends-card-header">Solicitudes recibidas</div>
-                <div class="card-body friends-table-body">
-                  <div class="table-responsive friends-table-wrap">
-                    <table class="table table-sm align-middle mb-0 friends-table">
-                      <thead>
-                        <tr>
-                          <th>Usuario</th>
-                          <th>Bio</th>
-                          <th class="text-end">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="request in friendsStore.requests" :key="request.id">
-                          <td>
-                            <button type="button" class="friends-link-btn" @click="goProfile(request.user.username)">
-                              <span class="friends-avatar">{{ avatarLetter(request.user.username) }}</span>
-                              <span>@{{ request.user.username }}</span>
-                            </button>
-                          </td>
-                          <td>{{ request.user.bio || "Sin bio" }}</td>
-                          <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                              <button type="button" class="btn btn-outline-success" @click="friendsStore.accept(request.requesterId)">
-                                Aceptar
-                              </button>
-                              <button type="button" class="btn btn-outline-danger" @click="friendsStore.reject(request.requesterId)">
-                                Rechazar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr v-if="friendsStore.requests.length === 0">
-                          <td colspan="3" class="text-muted">No tienes solicitudes pendientes.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-lg-7">
-              <div class="card debate-surface friends-fixed-card">
-                <div class="card-header friends-card-header">Tus amigos</div>
-                <div class="card-body friends-table-body">
-                  <div class="table-responsive friends-table-wrap">
-                    <table class="table table-sm align-middle mb-0 friends-table">
-                      <thead>
-                        <tr>
-                          <th>Usuario</th>
-                          <th>Bio</th>
-                          <th>Estado</th>
-                          <th class="text-end">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="friend in friendsStore.friends" :key="friend.id">
-                          <td>
-                            <button type="button" class="friends-link-btn" @click="goProfile(friend.username)">
-                              <span class="friends-avatar">{{ avatarLetter(friend.username) }}</span>
-                              <span>@{{ friend.username }}</span>
-                            </button>
-                          </td>
-                          <td>{{ friend.bio || "Sin bio" }}</td>
-                          <td>{{ friend.location || "Sin ubicación" }}</td>
-                          <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                              <button type="button" class="btn btn-outline-primary" @click="chatStore.openConversationByUser(friend.id)">
-                                Chatear
-                              </button>
-                              <button type="button" class="btn btn-outline-danger" @click="friendsStore.remove(friend.id)">
-                                Eliminar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr v-if="friendsStore.friends.length === 0">
-                          <td colspan="4" class="text-muted">Aún no tienes amigos agregados.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <template v-else>
+      <template v-if="incoming.length">
+        <div class="section-head">
+          <h2 class="section-title">Solicitudes recibidas</h2>
         </div>
 
-        <div v-if="activeTab === 'add'" class="tab-pane fade show active">
-          <div class="card debate-surface friends-fixed-card">
-            <div class="card-header friends-card-header">Añadir amigo</div>
-            <div class="card-body friends-table-body">
-              <div class="friends-toolbar">
-                <input
-                  v-model="query"
-                  type="text"
-                  class="form-control"
-                  placeholder="Busca por username, bio o ubicación"
-                  @keyup.enter="searchUsers"
-                />
-                <button type="button" class="btn btn-primary" @click="searchUsers">Buscar</button>
-              </div>
-
-              <div class="table-responsive friends-table-wrap friends-table-wrap-main">
-                <table class="table table-hover align-middle mb-0 friends-table">
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Bio</th>
-                      <th>Ubicación</th>
-                      <th>Criterio</th>
-                      <th class="text-end">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-if="loadingUsers">
-                      <td colspan="5" class="text-muted">Cargando usuarios...</td>
-                    </tr>
-                    <tr v-for="user in users" :key="user.id">
-                      <td>
-                        <button type="button" class="friends-link-btn" @click="goProfile(user.username)">
-                          <span class="friends-avatar">{{ avatarLetter(user.username) }}</span>
-                          <span>@{{ user.username }}</span>
-                        </button>
-                      </td>
-                      <td>{{ user.bio || "Sin bio" }}</td>
-                      <td>{{ user.location || "Ubicación no disponible" }}</td>
-                      <td>{{ user.reliabilityScore || 0 }}</td>
-                      <td class="text-end">
-                        <button
-                          v-if="usersStore.me && Number(user.id) !== Number(usersStore.me.id)"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="canSendRequest(user.id) ? 'btn-primary' : 'btn-outline-secondary'"
-                          :disabled="!canSendRequest(user.id)"
-                          @click="sendRequest(user.id)"
-                        >
-                          {{ relationLabel(user.id) }}
-                        </button>
-                      </td>
-                    </tr>
-                    <tr v-if="!loadingUsers && users.length === 0">
-                      <td colspan="5" class="text-muted">No se encontraron usuarios.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <div class="surface list-card" style="margin-bottom: 18px">
+          <div v-for="friendship in incoming" :key="friendship.id" class="list-row">
+            <UserAvatar :user="friendship.requester" />
+            <span class="list-row-main">
+              <span class="list-row-title">{{ friendship.requester.username }}</span>
+              <span class="list-row-sub">Quiere ser tu amigo</span>
+            </span>
+            <button class="btn btn-primary btn-sm" type="button" @click="accept(friendship)">
+              Aceptar
+            </button>
           </div>
         </div>
+      </template>
 
-        <div v-if="activeTab === 'all'" class="tab-pane fade show active">
-          <div class="card debate-surface friends-fixed-card">
-            <div class="card-header friends-card-header">Todos los usuarios</div>
-            <div class="card-body friends-table-body">
-              <div class="friends-toolbar">
-                <div class="text-muted small">Listado general de usuarios disponibles</div>
-                <button type="button" class="btn btn-outline-primary" @click="showAllUsers">Actualizar</button>
-              </div>
+      <div class="section-head">
+        <h2 class="section-title">Amigos</h2>
+        <span class="text-muted" style="font-size: 0.85rem">{{ friends.length }}</span>
+      </div>
 
-              <div class="table-responsive friends-table-wrap friends-table-wrap-main">
-                <table class="table table-hover align-middle mb-0 friends-table">
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Bio</th>
-                      <th>Ubicación</th>
-                      <th>Criterio</th>
-                      <th class="text-end">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-if="loadingUsers">
-                      <td colspan="5" class="text-muted">Cargando usuarios...</td>
-                    </tr>
-                    <tr v-for="user in users" :key="user.id">
-                      <td>
-                        <button type="button" class="friends-link-btn" @click="goProfile(user.username)">
-                          <span class="friends-avatar">{{ avatarLetter(user.username) }}</span>
-                          <span>@{{ user.username }}</span>
-                        </button>
-                      </td>
-                      <td>{{ user.bio || "Sin bio" }}</td>
-                      <td>{{ user.location || "Ubicación no disponible" }}</td>
-                      <td>{{ user.reliabilityScore || 0 }}</td>
-                      <td class="text-end">
-                        <button
-                          v-if="usersStore.me && Number(user.id) !== Number(usersStore.me.id)"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="canSendRequest(user.id) ? 'btn-primary' : 'btn-outline-secondary'"
-                          :disabled="!canSendRequest(user.id)"
-                          @click="sendRequest(user.id)"
-                        >
-                          {{ relationLabel(user.id) }}
-                        </button>
-                      </td>
-                    </tr>
-                    <tr v-if="!loadingUsers && users.length === 0">
-                      <td colspan="5" class="text-muted">No hay usuarios disponibles.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <nav v-if="totalPages > 1" class="friends-pagination">
-                <ul class="pagination pagination-sm mb-0">
-                  <li class="page-item" :class="{ disabled: page <= 1 }">
-                    <button type="button" class="page-link" @click="onChangePage(page - 1)">Anterior</button>
-                  </li>
-                  <li v-for="pageNumber in visiblePages" :key="pageNumber" class="page-item" :class="{ active: pageNumber === page }">
-                    <button type="button" class="page-link" @click="onChangePage(pageNumber)">{{ pageNumber }}</button>
-                  </li>
-                  <li class="page-item" :class="{ disabled: page >= totalPages }">
-                    <button type="button" class="page-link" @click="onChangePage(page + 1)">Siguiente</button>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </div>
+      <div v-if="friends.length" class="surface list-card">
+        <div v-for="friendship in friends" :key="friendship.id" class="list-row">
+          <UserAvatar :user="otherUser(friendship)" />
+          <RouterLink
+            class="list-row-main"
+            :to="{ name: 'user', params: { username: otherUser(friendship).username } }"
+          >
+            <span class="list-row-title">{{ otherUser(friendship).username }}</span>
+          </RouterLink>
+          <button
+            class="icon-btn"
+            type="button"
+            aria-label="Abrir conversación"
+            @click="openChat(friendship)"
+          >
+            <span class="material-symbols-rounded">chat</span>
+          </button>
+          <button class="icon-btn" type="button" aria-label="Quitar amigo" @click="remove(friendship)">
+            <span class="material-symbols-rounded">person_remove</span>
+          </button>
         </div>
       </div>
-    </div>
-  </q-page>
+
+      <EmptyState
+        v-else
+        icon="group_add"
+        title="Todavía no tienes amigos"
+        text="Añade a alguien por su nombre de usuario para hablar en privado."
+      />
+
+      <template v-if="outgoing.length">
+        <div class="section-head" style="margin-top: 22px">
+          <h2 class="section-title">Solicitudes enviadas</h2>
+        </div>
+
+        <div class="surface list-card">
+          <div v-for="friendship in outgoing" :key="friendship.id" class="list-row">
+            <UserAvatar :user="friendship.addressee" />
+            <span class="list-row-main">
+              <span class="list-row-title">{{ friendship.addressee.username }}</span>
+              <span class="list-row-sub">Pendiente de respuesta</span>
+            </span>
+            <button class="btn btn-outline btn-sm" type="button" @click="remove(friendship)">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </template>
+    </template>
+  </section>
 </template>

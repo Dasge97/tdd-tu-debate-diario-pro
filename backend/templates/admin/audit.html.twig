@@ -1,0 +1,58 @@
+{% extends 'admin/base.html.twig' %}
+{% block title %}Auditoría — Admin TDD{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Registro de auditoría</h2>
+
+<div class="card bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Admin</th>
+                    <th>Acción</th>
+                    <th>Tipo</th>
+                    <th>Entidad</th>
+                    <th>Payload</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="text-muted small">{{ log.id }}</td>
+                    <td><strong>{{ log.adminUser.username }}</strong></td>
+                    <td><code class="small">{{ log.actionType }}</code></td>
+                    <td class="small text-muted">{{ log.entityType }}</td>
+                    <td class="small text-muted">{{ log.entityId ?? '—' }}</td>
+                    <td>
+                        {% if log.payload %}
+                        <button class="btn btn-xs btn-outline-secondary" type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#payload-{{ log.id }}">Ver</button>
+                        <div class="collapse mt-1" id="payload-{{ log.id }}">
+                            <pre class="bg-light p-2 rounded small">{{ log.payload|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                        </div>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ log.createdAt|date('d/m/Y H:i') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-3">Sin entradas de auditoría</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if page > 1 %}
+        <li class="page-item"><a class="page-link" href="?page={{ page - 1 }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Página {{ page }}</span></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page + 1 }}">Siguiente</a></li>
+    </ul>
+</nav>
+{% endblock %}

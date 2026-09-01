@@ -1,39 +1,53 @@
 import { defineStore } from "pinia";
-import { favoritesService } from "@/services/favorites.service";
+import { socialService, usersService } from "@/services";
 
+/**
+ * Debates marcados como favoritos.
+ *
+ * POST /favorites/{id} es un conmutador en el servidor y devuelve
+ * {favorited: bool}, asi que aqui basta con reflejar esa respuesta.
+ */
 export const useFavoritesStore = defineStore("favorites", {
   state: () => ({
+    ids: new Set(),
     items: [],
-    loading: false
+    loaded: false
   }),
+
   getters: {
-    favoriteIds: (state) => new Set(state.items.map((item) => Number(item.id)))
+    isFavorite: (state) => (debateId) => state.ids.has(Number(debateId))
   },
+
   actions: {
-    async fetchFavorites() {
-      this.loading = true;
-      try {
-        this.items = await favoritesService.list();
-      } catch (_error) {
-        this.items = [];
-      } finally {
-        this.loading = false;
-      }
+    async load(force = false) {
+      if (this.loaded && !force) return this.items;
+      const favorites = await usersService.favorites();
+      this.items = favorites;
+      this.ids = new Set(favorites.map((favorite) => Number(favorite.debate.id)));
+      this.loaded = true;
+      return favorites;
     },
-    async add(debateId) {
-      await favoritesService.add(debateId);
-      await this.fetchFavorites();
-    },
-    async remove(debateId) {
-      await favoritesService.remove(debateId);
-      this.items = this.items.filter((item) => Number(item.id) !== Number(debateId));
-    },
+
     async toggle(debateId) {
-      if (this.favoriteIds.has(Number(debateId))) {
-        await this.remove(debateId);
+      const id = Number(debateId);
+      const { favorited } = await socialService.addFavorite(id);
+
+      if (favorited) {
+        this.ids.add(id);
       } else {
-        await this.add(debateId);
+        this.ids.delete(id);
+        this.items = this.items.filter((favorite) => Number(favorite.debate.id) !== id);
       }
+
+      this.ids = new Set(this.ids);
+      this.loaded = false;
+      return favorited;
+    },
+
+    reset() {
+      this.ids = new Set();
+      this.items = [];
+      this.loaded = false;
     }
   }
 });

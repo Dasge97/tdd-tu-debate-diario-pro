@@ -1,122 +1,64 @@
-# Tu Debate Diario
+# TDD App Móvil
 
-Aplicacion full stack para debatir temas de actualidad, con comunidad, perfiles, comentarios, favoritos, amistades, chat y un pipeline editorial integrado para importar noticias y generar debates.
+Plataforma de debates de actualidad generados diariamente por IA, con app móvil nativa. Versión profesional y refactor completo de tdd-tu-debate-diario-pro.
+
+## Concepto
+
+Cada día, un worker editorial genera 5 debates sobre temas de actualidad. Cada debate es publicado por uno de los 7-8 perfiles IA de la plataforma, cada uno con personalidad y especialidad propias. Los usuarios participan comentando, votando posiciones y debatiendo con la comunidad.
+
+Los perfiles IA reemplazan el concepto de categorías: en lugar de filtrar por "economía", sigues al perfil economista y lees sus debates.
 
 ## Stack
 
-- `frontend/`: Vue 3, Vite, Pinia, Bootstrap y partes de Quasar
-- `backend/`: Node.js, Express, MySQL, JWT y WebSocket
-- `opencode/`: worker para procesar jobs editoriales
-- `n8n/`: workflows de scraping/importacion
-- `docker-compose.yml`: entorno unificado para desarrollo local
+| Capa | Tecnología |
+|---|---|
+| Backend API | PHP 8 + Symfony 7 |
+| ORM | Doctrine ORM (atributos PHP 8) + DBAL |
+| Base de datos | MySQL 8 |
+| Web instalable | Vue 3 + Vite (PWA), servida en /app |
+| App móvil | Flutter (iOS + Android) |
+| Worker editorial | Node.js |
+| Panel admin | Twig dentro del backend |
 
-## Estructura
+## Estructura del repositorio
 
-- `backend/`: API principal y acceso a datos
-- `frontend/`: SPA principal
-- `opencode/`: worker de generacion
-- `n8n/`: configuracion y workflows
-- `shared/`: intercambio de jobs entre backend y worker
-- `docs/`: documentacion adicional del proyecto
-
-## Requisitos
-
-- Docker y Docker Compose
-- Node.js 22 si vas a ejecutar servicios fuera de Docker
-- npm
-
-## Variables de entorno
-
-Este repo usa dos ejemplos principales:
-
-- [`.env.example`](/home/tekilatime/PROYECTOS/tdd-tu-debate-diario/.env.example): variables raiz para `docker compose`
-- [`frontend/.env.example`](/home/tekilatime/PROYECTOS/tdd-tu-debate-diario/frontend/.env.example): variables del frontend
-
-Opcionalmente tambien tienes:
-
-- [`backend/.env.example`](/home/tekilatime/PROYECTOS/tdd-tu-debate-diario/backend/.env.example): arranque local del backend sin Docker
-
-## Arranque rapido con Docker
-
-1. Copia los ejemplos de entorno:
-
-```bash
-cp .env.example .env
-cp frontend/.env.example frontend/.env
+```
+tdd-app-movil/
+├── backend/        ← API REST Symfony 7, landing y panel admin
+├── frontend/       ← Web instalable Vue 3, se sirve en /app
+├── mobile/         ← App Flutter
+├── worker/         ← Worker editorial Node.js (cron diario)
+├── docs/           ← Documentación detallada
+├── personas/       ← Definición de los perfiles IA
+├── Dockerfile      ← Imagen de producción: compila frontend/ y lo sirve con la API
+└── docker-compose.yml
 ```
 
-2. Levanta el stack:
+## Direcciones
 
-```bash
-docker compose up --build -d
-```
+| Dirección | Qué sirve |
+|---|---|
+| `tudebatediario.com/` | Landing pública |
+| `tudebatediario.com/app` | Web instalable (Vue) |
+| `tudebatediario.com/api/v1` | API REST |
+| `tudebatediario.com/legal/*`, `/soporte` | Páginas legales |
+| `ws.tudebatediario.com` | Websocket del chat |
 
-3. Accede a los servicios:
+## Documentación
 
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3000`
-- n8n: `http://localhost:5689`
+- [Arquitectura general](docs/ARCHITECTURE.md)
+- [Backend — API Symfony](docs/BACKEND.md)
+- [Worker editorial](docs/WORKER.md)
+- [App móvil Flutter](docs/MOBILE.md)
+- [Perfiles IA](docs/PERSONAS.md)
+- [Panel admin](docs/ADMIN.md)
+- [Web instalable](frontend/README.md)
+- [Base de datos](docs/DATABASE.md)
 
-## Desarrollo por separado
+## Arranque rápido
 
-### Backend
+> Documentación de arranque pendiente hasta tener el stack inicial montado.
 
-```bash
-cd backend
-cp .env.example .env
-npm install
-npm run dev
-```
+## Estado del proyecto
 
-### Frontend
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
-
-## Endpoints y operativa
-
-Vistas operativas servidas por el backend:
-
-- `http://localhost:3000/index.html`
-- `http://localhost:3000/imports.html`
-- `http://localhost:3000/jobs.html`
-
-Endpoints operativos principales:
-
-- `POST /news/import`
-- `GET /news/imports`
-- `GET /news/imports/latest`
-- `GET /news/pending`
-- `POST /generation/jobs`
-- `GET /generation/jobs`
-- `GET /generation/jobs/:jobId`
-- `POST /generation/jobs/:jobId/complete`
-- `GET /debates/latest`
-
-## Git y publicacion
-
-El proyecto ya queda preparado para subirse a Git:
-
-- `.env`, `node_modules`, logs, uploads y artefactos generados ignorados
-- ejemplos de entorno incluidos
-- `Dockerfile` con `.dockerignore` por servicio
-- `.gitattributes` con finales de linea normalizados
-
-Si quieres inicializar el repo localmente:
-
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-```
-
-## Recomendaciones antes de publicar
-
-- Cambia todos los secretos de `.env`
-- No subas ningun `.env` real
-- Revisa credenciales de `n8n`, JWT y claves de proveedores
-- Si vas a publicar el repo, considera añadir una licencia
+En planificación. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para el plan completo.

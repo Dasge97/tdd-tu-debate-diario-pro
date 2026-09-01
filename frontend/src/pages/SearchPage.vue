@@ -1,102 +1,93 @@
 <script setup>
-import { reactive, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import AppInput from "@/components/AppInput.vue";
-import AppSelect from "@/components/AppSelect.vue";
+import { onBeforeUnmount, ref, watch } from "vue";
 import DebateCard from "@/components/DebateCard.vue";
+import EmptyState from "@/components/EmptyState.vue";
+import { debatesService } from "@/services";
 import { useDebatesStore } from "@/stores/debates";
+import { useUiStore } from "@/stores/ui";
+import { errorMessage } from "@/api/client";
 
-const router = useRouter();
-const route = useRoute();
-const debatesStore = useDebatesStore();
+const debates = useDebatesStore();
+const ui = useUiStore();
 
-const filters = reactive({
-  q: String(route.query.q || ""),
-  sort: "new",
-  position: "",
-  day: ""
-});
+const query = ref("");
+const results = ref([]);
+const searching = ref(false);
+const searched = ref(false);
 
-const runSearch = async () => {
-  await debatesStore.search({
-    q: filters.q,
-    sort: filters.sort,
-    position: filters.position,
-    from: filters.day || undefined,
-    to: filters.day || undefined
-  });
-  router.replace({ name: "buscar", query: { q: filters.q || undefined } });
+let debounceTimer = null;
+
+const run = async () => {
+  const term = query.value.trim();
+
+  if (term.length < 2) {
+    results.value = [];
+    searched.value = false;
+    return;
+  }
+
+  searching.value = true;
+  try {
+    const data = await debatesService.search(term);
+    results.value = data;
+    debates.cache(data);
+    debates.loadPositionsFor(data);
+    searched.value = true;
+  } catch (error) {
+    ui.error(errorMessage(error, "La búsqueda ha fallado."));
+  } finally {
+    searching.value = false;
+  }
 };
 
-const openDebate = (id) => router.push({ name: "debate", params: { id } });
+/* Espera a que el usuario deje de escribir antes de llamar a la API. */
+watch(query, () => {
+  window.clearTimeout(debounceTimer);
+  debounceTimer = window.setTimeout(run, 400);
+});
 
-onMounted(runSearch);
+onBeforeUnmount(() => window.clearTimeout(debounceTimer));
 </script>
 
 <template>
-  <q-page class="q-px-md q-pb-lg">
-    <h1 class="section-title q-mt-md q-mb-md">Buscar debates</h1>
+  <section>
+    <div class="search-bar" style="margin-bottom: 16px">
+      <span class="material-symbols-rounded" style="color: #667085">search</span>
+      <input
+        v-model="query"
+        type="search"
+        enterkeyhint="search"
+        placeholder="Busca un debate…"
+        aria-label="Buscar debates"
+        @keydown.enter="run"
+      />
+      <button
+        v-if="query"
+        type="button"
+        class="icon-btn"
+        aria-label="Limpiar búsqueda"
+        @click="query = ''"
+      >
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
 
-    <q-card flat bordered class="debate-surface q-mb-md">
-      <q-card-section class="filter-grid filter-grid-search">
-        <div class="filter-cell filter-cell-text">
-          <AppInput v-model="filters.q" dense label="Texto" placeholder="Busca por título o contenido" />
-        </div>
-        <div class="filter-cell">
-          <AppSelect
-            v-model="filters.sort"
-            dense
-            label="Orden"
-            :options="[
-              { label: 'Más nuevos', value: 'new' },
-              { label: 'Más antiguos', value: 'old' },
-              { label: 'Más comentarios', value: 'comments' },
-              { label: 'Más votos', value: 'votes' }
-            ]"
-          />
-        </div>
-        <div class="filter-cell">
-          <AppSelect
-            v-model="filters.position"
-            dense
-            label="Posición"
-            :options="[
-              { label: 'Todas', value: '' },
-              { label: 'A favor', value: 'support' },
-              { label: 'En contra', value: 'oppose' },
-              { label: 'Neutral', value: 'neutral' }
-            ]"
-          />
-        </div>
-        <div class="filter-cell">
-          <AppInput
-            v-model="filters.day"
-            dense
-            type="date"
-            label="Fecha"
-          />
-        </div>
-        <div class="filter-cell filter-cell-actions">
-          <div class="filter-actions filter-actions-single">
-            <q-btn color="primary" unelevated label="Buscar" @click="runSearch" />
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
+    <div v-if="searching" class="spinner" />
 
-    <q-skeleton v-if="debatesStore.loadingSearch" type="rect" height="140px" class="q-mb-sm" />
-    <DebateCard
-      v-for="debate in debatesStore.searchResults"
-      :key="debate.id"
-      :debate="debate"
-      @open="openDebate"
+    <DebateCard v-for="debate in results" :key="debate.id" :debate="debate" />
+
+    <EmptyState
+      v-if="!searching && searched && !results.length"
+      icon="search_off"
+      title="Sin resultados"
+      :text="`No hemos encontrado debates para «${query.trim()}».`"
     />
-    <q-banner
-      v-if="!debatesStore.loadingSearch && debatesStore.searchResults.length === 0"
-      rounded
-      class="bg-grey-2"
-    >
-      No se encontraron debates para esos filtros.
-    </q-banner>
-  </q-page>
+
+    <EmptyState
+      v-else-if="!searching && !searched"
+      icon="search"
+      title="Busca por título o tema"
+      text="Escribe al menos dos letras para empezar."
+    />
+  </section>
 </template>

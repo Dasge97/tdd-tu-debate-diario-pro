@@ -1,0 +1,18 @@
+# El contexto de build es la raiz del repo; fuera todo lo que la imagen no usa.
+.git
+.github
+docs
+mobile
+worker
+
+**/node_modules
+frontend/dist
+backend/public/app
+backend/vendor
+backend/var/cache
+backend/var/log
+backend/.env.local
+backend/.env.*.local
+
+**/*.md
+!README.md

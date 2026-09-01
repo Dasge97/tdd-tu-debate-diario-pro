@@ -1,129 +1,156 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import HeroSection from "@/components/HeroSection.vue";
-import DebateCarousel from "@/components/DebateCarousel.vue";
 import DebateCard from "@/components/DebateCard.vue";
-import CommunityTodaySection from "@/components/CommunityTodaySection.vue";
+import DebateSkeleton from "@/components/DebateSkeleton.vue";
+import EmptyState from "@/components/EmptyState.vue";
+import UserAvatar from "@/components/UserAvatar.vue";
 import { useDebatesStore } from "@/stores/debates";
 import { useUsersStore } from "@/stores/users";
-import { useStatsStore } from "@/stores/stats";
-import { useActivityStore } from "@/stores/activity";
+
+/** Las tres pestañas de la pantalla de inicio de la app Flutter. */
+const TABS = [
+  { key: "hoy", label: "Hoy" },
+  { key: "semana", label: "Semana" },
+  { key: "protagonistas", label: "Protagonistas" }
+];
+
+const TAB_KEY = "tdd.homeTab";
 
 const router = useRouter();
-const debatesStore = useDebatesStore();
-const usersStore = useUsersStore();
-const statsStore = useStatsStore();
-const activityStore = useActivityStore();
-let activityRefreshTimer = null;
+const debates = useDebatesStore();
+const users = useUsersStore();
+
+const tab = ref(localStorage.getItem(TAB_KEY) || "hoy");
+
+const today = computed(() => debates.today);
+const week = computed(() => debates.topWeek);
+
+const loadTab = () => {
+  if (tab.value === "hoy") debates.fetchToday();
+  if (tab.value === "semana") debates.fetchTopWeek();
+  if (tab.value === "protagonistas") users.loadProtagonistas();
+};
+
+watch(tab, (value) => {
+  localStorage.setItem(TAB_KEY, value);
+  loadTab();
+});
+
+onMounted(() => {
+  debates.fetchTicker();
+  loadTab();
+});
 
 const openDebate = (id) => router.push({ name: "debate", params: { id } });
-const goToCommunity = () => router.push({ name: "comunidad" });
-const goToTodaySection = () => {
-  const node = document.getElementById("debates-hoy");
-  node?.scrollIntoView({ behavior: "smooth", block: "start" });
-};
-
-const debateMomentum = (debate) => {
-  const raw = debate?.positionsRaw || {};
-  const votes = Number(raw.support || 0) + Number(raw.oppose || 0) + Number(raw.neutral || 0);
-  const comments = Number(debate?.commentCount || 0);
-  return votes + comments * 3;
-};
-
-const hottestDebate = computed(() => {
-  if (!debatesStore.today.length) return null;
-
-  return [...debatesStore.today].sort((a, b) => debateMomentum(b) - debateMomentum(a))[0] || null;
-});
-
-const stats = computed(() => ({
-  comentariosHoy: statsStore.comentariosHoy,
-  participantesHoy: statsStore.participantesHoy,
-  debatesActivos: statsStore.debatesActivos,
-  votosEmitidos: statsStore.votosEmitidos,
-  promedioComentariosPorDebate: statsStore.promedioComentariosPorDebate
-}));
-
-const toneByType = {
-  debate_created: "debate",
-  comment_created: "comment",
-  comment_replied: "comment",
-  comment_voted: "vote",
-  position_set: "vote",
-  position_changed: "vote"
-};
-
-const liveActivity = computed(() =>
-  activityStore.items.map((item) => ({
-    id: item.id,
-    tone: toneByType[item.type] || "default",
-    actor: item.user?.username || "Usuario",
-    message: item.message || "ha realizado una actividad",
-    createdAt: item.createdAt || item.created_at || ""
-  }))
-);
-
-onMounted(async () => {
-  await Promise.all([
-    debatesStore.fetchToday(),
-    usersStore.fetchTopUsers(),
-    activityStore.fetchRecent(8)
-  ]);
-  statsStore.computeFromDebates(debatesStore.today, usersStore.topUsers);
-
-  activityRefreshTimer = window.setInterval(() => {
-    activityStore.fetchRecent(8);
-  }, 15000);
-});
-
-onBeforeUnmount(() => {
-  if (activityRefreshTimer) {
-    window.clearInterval(activityRefreshTimer);
-    activityRefreshTimer = null;
-  }
-});
 </script>
 
 <template>
-  <q-page class="home-page">
-    <HeroSection
-      :highlighted-debate="hottestDebate"
-      @open-highlight="openDebate"
-      @go-today="goToTodaySection"
-      @go-community="goToCommunity"
-    />
-
-    <DebateCarousel :debates="debatesStore.today" @open="openDebate" />
-
-    <section class="q-px-md q-pb-xl home-dashboard">
-      <div class="home-dashboard-grid">
-        <div class="home-primary-column" id="debates-hoy">
-          <div class="home-section-intro q-mb-md">
-            <h2 class="section-title q-my-none">Propuestas de hoy</h2>
-          </div>
-
-          <q-banner v-if="debatesStore.error" class="bg-red-1 text-negative q-mb-md" rounded>
-            {{ debatesStore.error }}
-          </q-banner>
-
-          <q-skeleton v-if="debatesStore.loadingToday" type="rect" height="160px" class="q-mb-md" />
-          <DebateCard
-            v-for="debate in debatesStore.today"
-            :key="debate.id"
-            :debate="debate"
-            @open="openDebate"
-          />
+  <section>
+    <!-- Cinta de titulares: los debates con más participación, deslizables. -->
+    <div v-if="debates.ticker.length" class="ticker" aria-label="Debates destacados">
+      <button
+        v-for="item in debates.ticker.slice(0, 10)"
+        :key="item.id"
+        type="button"
+        class="ticker-item"
+        @click="openDebate(item.id)"
+      >
+        <div class="mini-label" style="margin-bottom: 6px">
+          {{ item.createdBy?.username || "TuDebateDiario" }}
         </div>
+        <div class="ticker-item-title">{{ item.title }}</div>
+      </button>
+    </div>
 
-        <div class="home-secondary-column">
-          <CommunityTodaySection
-            :top-users="usersStore.topUsers"
-            :stats="stats"
-            :activity-items="liveActivity"
-          />
-        </div>
+    <div class="tabs" role="tablist">
+      <button
+        v-for="item in TABS"
+        :key="item.key"
+        type="button"
+        role="tab"
+        class="tab"
+        :class="{ 'is-active': tab === item.key }"
+        :aria-selected="tab === item.key"
+        @click="tab = item.key"
+      >
+        {{ item.label }}
+      </button>
+    </div>
+
+    <!-- HOY -->
+    <div v-if="tab === 'hoy'">
+      <div class="section-head">
+        <h2 class="section-title">Debates de hoy</h2>
+        <RouterLink class="btn btn-ghost btn-sm" :to="{ name: 'propose' }">Proponer</RouterLink>
       </div>
-    </section>
-  </q-page>
+
+      <p v-if="debates.error" class="form-error">{{ debates.error }}</p>
+
+      <DebateSkeleton v-if="debates.loadingToday && !today.length" />
+
+      <DebateCard v-for="debate in today" :key="debate.id" :debate="debate" />
+
+      <EmptyState
+        v-if="!debates.loadingToday && !today.length"
+        icon="forum"
+        title="Todavía no hay debates hoy"
+        text="Los debates del día se publican cada mañana. Vuelve en un rato."
+      />
+    </div>
+
+    <!-- SEMANA -->
+    <div v-else-if="tab === 'semana'">
+      <div class="section-head">
+        <h2 class="section-title">Lo más debatido de la semana</h2>
+      </div>
+
+      <DebateSkeleton v-if="debates.loadingWeek && !week.length" />
+
+      <DebateCard v-for="debate in week" :key="debate.id" :debate="debate" />
+
+      <EmptyState
+        v-if="!debates.loadingWeek && !week.length"
+        icon="calendar_month"
+        title="Sin debates esta semana"
+        text="Aún no hay suficiente participación para hacer un ranking semanal."
+      />
+    </div>
+
+    <!-- PROTAGONISTAS -->
+    <div v-else>
+      <div class="section-head">
+        <h2 class="section-title">Protagonistas</h2>
+        <span class="text-muted" style="font-size: 0.82rem">Por fiabilidad</span>
+      </div>
+
+      <div v-if="users.loadingProtagonistas && !users.protagonistas.length" class="spinner" />
+
+      <div v-else-if="users.protagonistas.length" class="surface list-card">
+        <RouterLink
+          v-for="(user, index) in users.protagonistas"
+          :key="user.id"
+          class="list-row"
+          :to="{ name: 'user', params: { username: user.username } }"
+        >
+          <span class="rank-badge" :class="{ 'is-top': index < 3 }">{{ index + 1 }}</span>
+          <UserAvatar :user="user" size="sm" />
+          <span class="list-row-main">
+            <span class="list-row-title">{{ user.username }}</span>
+            <span class="list-row-sub">{{ user.profileTagline || user.bio || "Miembro de la comunidad" }}</span>
+          </span>
+          <span class="list-row-aside">
+            <span class="meta-pill">{{ user.reliabilityScore ?? 0 }}</span>
+          </span>
+        </RouterLink>
+      </div>
+
+      <EmptyState
+        v-else
+        icon="social_leaderboard"
+        title="Ranking vacío"
+        text="Cuando la comunidad empiece a comentar, aquí aparecerán los protagonistas."
+      />
+    </div>
+  </section>
 </template>

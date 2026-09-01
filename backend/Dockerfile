@@ -1,12 +1,35 @@
-FROM node:22-alpine
+FROM php:8.4-fpm-alpine
 
-WORKDIR /app
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    icu-dev \
+    libzip-dev \
+    oniguruma-dev \
+    && docker-php-ext-install \
+    pdo_mysql \
+    intl \
+    zip \
+    bcmath \
+    opcache
 
-COPY package.json ./
-RUN npm install
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-COPY src ./src
+WORKDIR /var/www/html
 
-RUN mkdir -p /app/uploads
+COPY composer.json composer.lock symfony.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-CMD ["npm", "start"]
+COPY . .
+
+RUN chown -R www-data:www-data var/ public/
+
+# nginx config
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+# supervisor config
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 3000
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

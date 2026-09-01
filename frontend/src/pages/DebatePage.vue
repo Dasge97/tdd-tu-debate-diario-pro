@@ -1,391 +1,323 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import DebateCard from "@/components/DebateCard.vue";
-import DebateCommentItem from "@/components/DebateCommentItem.vue";
+import { computed, nextTick, onMounted, ref } from "vue";
+import PositionBar from "@/components/PositionBar.vue";
+import CommentItem from "@/components/CommentItem.vue";
+import UserAvatar from "@/components/UserAvatar.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import { useDebatesStore } from "@/stores/debates";
-import { useUsersStore } from "@/stores/users";
-import { useToastStore } from "@/stores/toast";
+import { useFavoritesStore } from "@/stores/favorites";
+import { useUiStore } from "@/stores/ui";
+import { debatesService, participationService } from "@/services";
+import { errorMessage } from "@/api/client";
+import { formatDateTime, plural, toParagraphs } from "@/utils/format";
 
-const route = useRoute();
-const router = useRouter();
-const debatesStore = useDebatesStore();
-const usersStore = useUsersStore();
-const toastStore = useToastStore();
+const props = defineProps({
+  id: { type: [String, Number], required: true }
+});
 
-const debateId = computed(() => Number(route.params.id));
-const newComment = ref("");
-const position = ref("");
-const commentError = ref("");
-const activeReplyId = ref(null);
-const replyError = ref("");
+const debates = useDebatesStore();
+const favorites = useFavoritesStore();
+const ui = useUiStore();
 
-const debate = computed(() => debatesStore.byId[debateId.value]);
-const isEditorialDebate = computed(() => debate.value?.author?.type !== "user");
-const authorPanelTitle = computed(() =>
-  isEditorialDebate.value ? "Sobre esta publicación" : "Sobre el autor"
+const debateId = Number(props.id);
+
+const debate = ref(debates.byId[debateId] || null);
+const comments = ref([]);
+const loading = ref(true);
+const loadingComments = ref(true);
+const loadError = ref(null);
+
+const draft = ref("");
+const replyTo = ref(null);
+const sending = ref(false);
+const composer = ref(null);
+
+/**
+ * La API no devuelve que posicion eligio el usuario, solo los recuentos.
+ * Se guarda en el navegador para que el boton siga marcado al volver.
+ */
+const POSITIONS_KEY = "tdd.myPositions";
+
+const readPositions = () => {
+  try {
+    return JSON.parse(localStorage.getItem(POSITIONS_KEY) || "{}");
+  } catch (_) {
+    return {};
+  }
+};
+
+const myPosition = ref(readPositions()[debateId] || null);
+
+const percentages = computed(() => debates.percentagesFor(debateId));
+const isFavorite = computed(() => favorites.isFavorite(debateId));
+const author = computed(() => debate.value?.createdBy || null);
+const contextParagraphs = computed(() => toParagraphs(debate.value?.context));
+const commentCount = computed(() =>
+  comments.value.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)
 );
-const comments = computed(() => debatesStore.commentsByDebate[debateId.value] || []);
-const commentsByParent = computed(() => {
-  const map = {};
-  comments.value.forEach((comment) => {
-    const key = comment.parentId ?? "root";
-    if (!map[key]) map[key] = [];
-    map[key].push(comment);
-  });
-  return map;
-});
-const rootComments = computed(() => commentsByParent.value.root || []);
-const editorialPublishedAtLabel = computed(() => {
-  if (!debate.value?.publishedAt) return "";
-
-  const date = new Date(debate.value.publishedAt);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
-});
-
-const editorialMetaItems = computed(() => {
-  if (!debate.value) return [];
-
-  return [
-    debate.value.category ? `Tema: ${debate.value.category}` : "",
-    editorialPublishedAtLabel.value ? `Publicado el ${editorialPublishedAtLabel.value}` : ""
-  ].filter(Boolean);
-});
 
 const load = async () => {
-  if (!Number.isInteger(debateId.value) || debateId.value <= 0) {
-    router.push({ name: "home" });
-    return;
-  }
-  await Promise.all([
-    debatesStore.fetchToday(),
-    debatesStore.fetchDebate(debateId.value),
-    debatesStore.fetchComments(debateId.value)
-  ]);
-};
-
-const submitComment = async () => {
-  commentError.value = "";
-  if (!usersStore.isAuthenticated) {
-    commentError.value = "Debes iniciar sesión para comentar.";
-    toastStore.info(commentError.value);
-    return;
-  }
-  if (!newComment.value.trim()) {
-    commentError.value = "Escribe un comentario antes de enviar.";
-    return;
-  }
+  loading.value = true;
+  loadError.value = null;
   try {
-    await debatesStore.createComment({
-      debateId: debateId.value,
-      content: newComment.value.trim()
-    });
-    newComment.value = "";
-    commentError.value = "";
+    const [detail] = await Promise.all([
+      debatesService.byId(debateId),
+      debates.fetchPositions(debateId).catch(() => {})
+    ]);
+    debate.value = detail;
   } catch (error) {
-    commentError.value = error?.response?.data?.error || "No se pudo publicar el comentario.";
-    toastStore.error(commentError.value);
-    commentError.value = "";
+    loadError.value = errorMessage(error, "No hemos podido cargar este debate.");
+  } finally {
+    loading.value = false;
   }
 };
 
-const openReply = (commentId) => {
-  if (!usersStore.isAuthenticated) {
-    toastStore.info("Debes iniciar sesión para responder comentarios.");
-    return;
-  }
-  replyError.value = "";
-  activeReplyId.value = Number(commentId);
-};
-
-const cancelReply = () => {
-  activeReplyId.value = null;
-  replyError.value = "";
-};
-
-const submitReply = async ({ parentId, content }) => {
-  replyError.value = "";
-  if (!usersStore.isAuthenticated) {
-    replyError.value = "Debes iniciar sesión para responder.";
-    return;
-  }
-  if (!content.trim()) {
-    replyError.value = "Escribe una respuesta antes de enviar.";
-    return;
-  }
+const loadComments = async () => {
+  loadingComments.value = true;
   try {
-    await debatesStore.createComment({
-      debateId: debateId.value,
-      parentId,
-      content: content.trim()
-    });
-    activeReplyId.value = null;
-    replyError.value = "";
+    comments.value = await participationService.getComments(debateId);
   } catch (error) {
-    replyError.value = error?.response?.data?.error || "No se pudo publicar la respuesta.";
-    toastStore.error(replyError.value);
-    replyError.value = "";
+    ui.error(errorMessage(error, "No hemos podido cargar los comentarios."));
+  } finally {
+    loadingComments.value = false;
   }
 };
 
-const submitPosition = async () => {
-  if (!usersStore.isAuthenticated) {
-    commentError.value = "Debes iniciar sesión para elegir una posición.";
-    toastStore.info(commentError.value);
-    return;
-  }
-  if (!position.value) return;
+onMounted(() => {
+  load();
+  loadComments();
+});
+
+const setPosition = async (position) => {
+  const previous = myPosition.value;
+  myPosition.value = position;
+
   try {
-    await debatesStore.setPosition({ debateId: debateId.value, position: position.value });
-    commentError.value = "";
+    await debates.setPosition(debateId, position);
+
+    const stored = readPositions();
+    stored[debateId] = position;
+    localStorage.setItem(POSITIONS_KEY, JSON.stringify(stored));
   } catch (error) {
-    commentError.value = error?.response?.data?.error || "No se pudo registrar tu posición.";
-    toastStore.error(commentError.value);
-    commentError.value = "";
+    myPosition.value = previous;
+    ui.error(errorMessage(error, "No hemos podido registrar tu posición."));
   }
 };
 
-const voteComment = async (commentId, value) => {
-  if (!usersStore.isAuthenticated) {
-    toastStore.info("Debes iniciar sesión para votar comentarios.");
-    return;
-  }
+const toggleFavorite = async () => {
   try {
-    await debatesStore.voteComment({ debateId: debateId.value, commentId, value });
-    commentError.value = "";
+    const favorited = await favorites.toggle(debateId);
+    ui.success(favorited ? "Guardado en favoritos" : "Quitado de favoritos");
   } catch (error) {
-    commentError.value = error?.response?.data?.error || "No se pudo votar el comentario.";
-    toastStore.error(commentError.value);
-    commentError.value = "";
+    ui.error(errorMessage(error, "No hemos podido guardar el favorito."));
   }
 };
 
-watch(() => route.params.id, load);
-onMounted(load);
+const startReply = async (comment) => {
+  replyTo.value = comment;
+  await nextTick();
+  composer.value?.focus();
+};
+
+const send = async () => {
+  const content = draft.value.trim();
+  if (!content || sending.value) return;
+
+  sending.value = true;
+  try {
+    await participationService.addComment(debateId, content, replyTo.value?.id ?? null);
+    draft.value = "";
+    replyTo.value = null;
+    await loadComments();
+  } catch (error) {
+    ui.error(errorMessage(error, "No hemos podido publicar tu comentario."));
+  } finally {
+    sending.value = false;
+  }
+};
+
+const report = async () => {
+  try {
+    await debatesService.report(debateId, "Reportado desde la web");
+    ui.success("Debate reportado. Gracias.");
+  } catch (error) {
+    ui.error(errorMessage(error, "No hemos podido enviar el reporte."));
+  }
+};
+
+/* El textarea crece con el texto hasta el maximo que fija el CSS. */
+const autoGrow = (event) => {
+  const element = event.target;
+  element.style.height = "auto";
+  element.style.height = `${element.scrollHeight}px`;
+};
 </script>
 
 <template>
-  <q-page>
-    <div class="row q-col-gutter-lg q-px-md q-pb-lg debate-page-wrap">
-      <div class="col-12 col-lg-8">
-        <q-skeleton v-if="debatesStore.loadingDebate" type="rect" height="220px" />
-        <DebateCard
-          v-else-if="debate"
-          :debate="debate"
-          :show-action="false"
-          :show-back="true"
-          variant="detail"
-          @back="router.push({ name: 'home' })"
+  <section class="has-composer">
+    <div v-if="loading && !debate" class="skeleton" style="height: 320px" />
+
+    <p v-else-if="loadError" class="form-error">{{ loadError }}</p>
+
+    <template v-else-if="debate">
+      <article class="debate-surface debate-detail">
+        <div class="debate-card-topbar">
+          <RouterLink
+            v-if="author"
+            class="debate-author"
+            :to="
+              author.isAiPersona
+                ? { name: 'persona', params: { username: author.username } }
+                : { name: 'user', params: { username: author.username } }
+            "
+          >
+            <UserAvatar :user="author" size="sm" />
+            <span style="min-width: 0">
+              <span class="debate-author-name">{{ author.username }}</span>
+              <span v-if="author.personaSpecialty" class="debate-author-tag">
+                · {{ author.personaSpecialty }}
+              </span>
+            </span>
+          </RouterLink>
+
+          <span style="display: flex">
+            <button
+              type="button"
+              class="icon-btn"
+              :aria-label="isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'"
+              @click="toggleFavorite"
+            >
+              <span
+                class="material-symbols-rounded"
+                :style="isFavorite ? 'color:#e74c3c;font-variation-settings:\'FILL\' 1' : ''"
+              >
+                favorite
+              </span>
+            </button>
+            <button type="button" class="icon-btn" aria-label="Reportar debate" @click="report">
+              <span class="material-symbols-rounded">flag</span>
+            </button>
+          </span>
+        </div>
+
+        <div class="debate-kicker-row">
+          <span v-if="author?.isAiPersona" class="debate-kicker-chip">Generado por IA</span>
+          <span v-if="debate.publishedAt" class="debate-kicker-text">
+            {{ formatDateTime(debate.publishedAt) }}
+          </span>
+        </div>
+
+        <h1 class="debate-title">{{ debate.title }}</h1>
+
+        <div class="debate-section-label">De qué va este debate</div>
+
+        <p v-if="debate.question" class="debate-story-paragraph debate-story-question">
+          <span class="debate-story-lead">La pregunta:</span>
+          {{ debate.question }}
+        </p>
+
+        <p v-if="debate.cardSummary" class="debate-story-paragraph">
+          <span class="debate-story-lead">La idea central:</span>
+          {{ debate.cardSummary }}
+        </p>
+
+        <p v-for="(paragraph, index) in contextParagraphs" :key="index" class="debate-story-paragraph">
+          {{ paragraph }}
+        </p>
+
+        <p v-if="debate.sourceUrl" style="margin-top: 16px">
+          <a :href="debate.sourceUrl" target="_blank" rel="noopener noreferrer">
+            Fuente: {{ debate.sourceName || debate.sourceUrl }}
+          </a>
+        </p>
+
+        <div style="margin-top: 20px">
+          <PositionBar :percentages="percentages" />
+
+          <div class="position-picker">
+            <button
+              type="button"
+              class="position-btn"
+              :class="{ 'is-active-support': myPosition === 'support' }"
+              @click="setPosition('support')"
+            >
+              <span class="material-symbols-rounded">thumb_up</span>
+              A favor
+            </button>
+            <button
+              type="button"
+              class="position-btn"
+              :class="{ 'is-active-neutral': myPosition === 'neutral' }"
+              @click="setPosition('neutral')"
+            >
+              <span class="material-symbols-rounded">drag_handle</span>
+              Neutral
+            </button>
+            <button
+              type="button"
+              class="position-btn"
+              :class="{ 'is-active-oppose': myPosition === 'oppose' }"
+              @click="setPosition('oppose')"
+            >
+              <span class="material-symbols-rounded">thumb_down</span>
+              En contra
+            </button>
+          </div>
+
+          <p class="text-muted" style="margin: 10px 0 0; font-size: 0.84rem">
+            {{ plural(percentages?.total ?? 0, "persona ya ha", "personas ya han") }}
+            fijado su posición.
+          </p>
+        </div>
+      </article>
+
+      <div class="section-head" style="margin-top: 22px">
+        <h2 class="section-title">Comentarios</h2>
+        <span class="text-muted" style="font-size: 0.85rem">{{ commentCount }}</span>
+      </div>
+
+      <div v-if="loadingComments" class="spinner" />
+
+      <div v-else-if="comments.length" class="surface surface-pad">
+        <CommentItem
+          v-for="comment in comments"
+          :key="comment.id"
+          :comment="comment"
+          @reply="startReply"
         />
-
-        <q-card flat bordered class="q-mb-md debate-surface debate-position-card">
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-medium q-mb-md">Tu posición en el debate</div>
-            <div class="debate-position-grid">
-              <button
-                type="button"
-                class="debate-position-option"
-                :class="{ active: position === 'support', support: true }"
-                @click="position = 'support'"
-              >
-                <span class="debate-position-head">
-                  <span class="debate-position-title">A favor</span>
-                  <span class="debate-position-pill"></span>
-                </span>
-                <span class="debate-position-copy">Apoyas la propuesta o ves más beneficios.</span>
-              </button>
-              <button
-                type="button"
-                class="debate-position-option"
-                :class="{ active: position === 'oppose', oppose: true }"
-                @click="position = 'oppose'"
-              >
-                <span class="debate-position-head">
-                  <span class="debate-position-title">En contra</span>
-                  <span class="debate-position-pill"></span>
-                </span>
-                <span class="debate-position-copy">No compartes la medida o ves más riesgos.</span>
-              </button>
-              <button
-                type="button"
-                class="debate-position-option"
-                :class="{ active: position === 'neutral', neutral: true }"
-                @click="position = 'neutral'"
-              >
-                <span class="debate-position-head">
-                  <span class="debate-position-title">Neutral</span>
-                  <span class="debate-position-pill"></span>
-                </span>
-                <span class="debate-position-copy">Aún no tomas postura o ves equilibrio.</span>
-              </button>
-            </div>
-            <div class="debate-position-actions">
-              <q-btn class="q-mt-sm" color="primary" unelevated label="Guardar posición" @click="submitPosition" />
-            </div>
-          </q-card-section>
-        </q-card>
-
-        <q-card flat bordered class="q-mb-md debate-surface debate-comment-form-card">
-          <q-card-section>
-            <div class="text-subtitle1 text-weight-medium q-mb-sm">Comentarios</div>
-            <q-input
-              v-model="newComment"
-              type="textarea"
-              outlined
-              autogrow
-              class="debate-comment-input"
-              placeholder="Escribe tu comentario"
-            />
-            <div class="debate-comment-form-actions">
-              <q-btn class="q-mt-sm" color="primary" unelevated label="Publicar comentario" @click="submitComment" />
-            </div>
-          </q-card-section>
-        </q-card>
-
-        <div class="debate-comments-list">
-          <DebateCommentItem
-            v-for="comment in rootComments"
-            :key="comment.id"
-            :comment="comment"
-            :children-map="commentsByParent"
-            :depth="0"
-            :is-last="comment.id === rootComments[rootComments.length - 1]?.id"
-            :active-reply-id="activeReplyId"
-            :reply-error="replyError"
-            :is-authenticated="usersStore.isAuthenticated"
-            @vote="voteComment"
-            @reply="openReply"
-            @cancel-reply="cancelReply"
-            @submit-reply="submitReply"
-          />
-
-          <q-card v-if="comments.length === 0" flat bordered class="debate-surface">
-            <q-card-section class="text-grey-7">
-              Todavía no hay comentarios en este debate.
-            </q-card-section>
-          </q-card>
-        </div>
       </div>
 
-      <div class="col-12 col-lg-4">
-        <div class="q-gutter-md">
-          <q-card flat bordered class="debate-surface side-panel">
-            <q-card-section>
-              <div class="text-overline text-grey-7 q-mb-sm panel-heading">{{ authorPanelTitle }}</div>
-              <div
-                v-if="debate?.author"
-                class="debate-author-profile"
-                :class="{ 'debate-author-profile-editorial': debate.author.type !== 'user' }"
-              >
-                <template v-if="debate.author.type === 'user'">
-                  <div class="debate-author-topline">
-                    <q-avatar class="debate-author-avatar" size="60px" color="primary" text-color="white">
-                      <img
-                        v-if="debate.author.avatarUrl"
-                        :src="debate.author.avatarUrl"
-                        :alt="`Avatar de ${debate.author.name}`"
-                      />
-                      <span v-else>{{ debate.author.name?.slice(0, 1)?.toUpperCase() || "T" }}</span>
-                    </q-avatar>
-                    <div class="debate-author-main">
-                      <div class="debate-author-kicker">Perfil autor</div>
-                      <div
-                        class="debate-author-name cursor-pointer"
-                        @click="router.push({ name: 'perfil', params: { username: debate.author.name } })"
-                      >
-                        @{{ debate.author.name }}
-                      </div>
-                      <div class="debate-author-label">{{ debate.author.label }}</div>
-                    </div>
-                  </div>
+      <EmptyState
+        v-else
+        icon="chat"
+        title="Nadie ha comentado todavía"
+        text="Sé la primera persona en argumentar tu posición."
+      />
 
-                  <div class="debate-author-focus">
-                    {{ debate.author.focus || debate.author.label }}
-                  </div>
-
-                  <div class="debate-author-bio">
-                    {{ debate.author.bio }}
-                  </div>
-
-                  <div v-if="debate.author.traits?.length" class="debate-author-traits">
-                    <span v-for="trait in debate.author.traits" :key="trait" class="debate-author-trait">
-                      {{ trait }}
-                    </span>
-                  </div>
-
-                  <div class="debate-author-meta">
-                    <span>Fuente: usuario</span>
-                    <span v-if="debate.author.location">{{ debate.author.location }}</span>
-                    <span>Índice {{ debate.author.reliabilityScore || 0 }}</span>
-                  </div>
-                </template>
-
-                <template v-else>
-                  <div class="debate-author-topline">
-                    <q-avatar class="debate-author-avatar" size="60px" color="primary" text-color="white">
-                      <span>{{ debate.author.name?.slice(0, 1)?.toUpperCase() || "T" }}</span>
-                    </q-avatar>
-                    <div class="debate-author-main">
-                      <div class="debate-author-kicker">Debate editorial</div>
-                      <div class="debate-author-name">{{ debate.author.name }}</div>
-                      <div class="debate-author-label">{{ debate.author.label }}</div>
-                    </div>
-                  </div>
-
-                  <div class="debate-author-focus">
-                    Este tema lo propone el sistema editorial de TDD a partir de una noticia reciente. No representa la opinión de una persona concreta: sirve para abrir conversación con contexto y una pregunta clara.
-                  </div>
-
-                  <div class="debate-author-bio">
-                    {{ debate.author.bio }}
-                  </div>
-
-                  <div class="debate-editorial-notes">
-                    <div class="debate-editorial-note">
-                      Resume el conflicto principal de la noticia para que la comunidad discuta el fondo del tema.
-                    </div>
-                    <div class="debate-editorial-note">
-                      La postura la pone la conversación de los usuarios, no la ficha editorial.
-                    </div>
-                  </div>
-
-                  <div class="debate-author-meta">
-                    <span v-for="item in editorialMetaItems" :key="item">{{ item }}</span>
-                  </div>
-                </template>
-              </div>
-              <div v-else class="text-grey-7">Sin información de autor disponible.</div>
-            </q-card-section>
-          </q-card>
-
-          <q-card flat bordered class="debate-surface side-panel">
-            <q-card-section>
-              <div class="text-overline text-grey-7 q-mb-sm panel-heading">Antes de comentar</div>
-              <div class="debate-rules-board">
-                <div class="debate-rules-pin" aria-hidden="true"></div>
-                <div class="debate-rules-paper">
-                  <div class="debate-rules-title">Tablón de la comunidad</div>
-                  <div class="debate-rules-subtitle">Un recordatorio rápido para que la conversación merezca la pena.</div>
-
-                  <ul class="debate-rules-list">
-                    <li>Explica tu punto con una razón concreta, aunque sea breve.</li>
-                    <li>Debate las ideas con firmeza, sin atacar a quien piensa distinto.</li>
-                    <li>Si algo no lo tienes claro, dilo: preguntar también mejora el debate.</li>
-                    <li>Evita repetir eslóganes o soltar el titular sin aportar nada más.</li>
-                  </ul>
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
+      <div v-if="replyTo" class="composer-reply-hint">
+        <span>Respondiendo a {{ replyTo.user?.username }}</span>
+        <button type="button" class="btn btn-ghost btn-sm" @click="replyTo = null">Cancelar</button>
       </div>
-    </div>
-  </q-page>
+
+      <div class="composer">
+        <textarea
+          ref="composer"
+          v-model="draft"
+          rows="1"
+          placeholder="Escribe tu argumento…"
+          aria-label="Escribe tu comentario"
+          @input="autoGrow"
+        />
+        <button
+          type="button"
+          class="composer-send"
+          aria-label="Publicar comentario"
+          :disabled="!draft.trim() || sending"
+          @click="send"
+        >
+          <span class="material-symbols-rounded">send</span>
+        </button>
+      </div>
+    </template>
+  </section>
 </template>
