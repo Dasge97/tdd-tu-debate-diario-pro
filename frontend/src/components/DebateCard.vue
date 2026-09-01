@@ -47,19 +47,38 @@ const alternarFavorito = async () => {
   }
 };
 
-/* Doble toque para guardar, con el corazon que late encima de la tarjeta. */
-let ultimoToque = 0;
+/**
+ * Un toque abre el debate y dos lo guardan.
+ *
+ * Para distinguirlos hay que esperar un momento antes de abrir, por si llega el
+ * segundo toque. Con raton no hay espera: se abre al momento.
+ */
+const ESPERA = 280;
 
-const alTocar = () => {
-  const ahora = Date.now();
+const hayTactil = () => navigator.maxTouchPoints > 0;
 
-  if (ahora - ultimoToque < 300) {
-    ultimoToque = 0;
-    dobleToque();
+let pulsaciones = 0;
+let temporizador = null;
+
+const alPulsar = () => {
+  if (!hayTactil()) {
+    abrirDebate();
     return;
   }
 
-  ultimoToque = ahora;
+  pulsaciones += 1;
+
+  if (pulsaciones === 1) {
+    temporizador = window.setTimeout(() => {
+      pulsaciones = 0;
+      abrirDebate();
+    }, ESPERA);
+    return;
+  }
+
+  window.clearTimeout(temporizador);
+  pulsaciones = 0;
+  dobleToque();
 };
 
 const dobleToque = async () => {
@@ -113,8 +132,7 @@ const dobleToque = async () => {
       class="debate-card-cuerpo"
       role="button"
       tabindex="0"
-      @click="abrirDebate"
-      @touchend="alTocar"
+      @click="alPulsar"
       @keydown.enter="abrirDebate"
       @keydown.space.prevent="abrirDebate"
     >

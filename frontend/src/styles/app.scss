@@ -884,6 +884,32 @@ h4 {
   opacity: 0.45;
 }
 
+/* Dentro de una hoja, el redactor va en el flujo del pie. Sin esta regla se
+   quedaba fijo sobre la barra inferior y dejaba dos franjas vacias. */
+.composer.en-encaje,
+.composer-reply-hint.en-encaje {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.composer-reply-hint.en-encaje {
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(31, 75, 163, 0.08);
+}
+
 .composer-reply-hint {
   position: fixed;
   left: 0;
@@ -1422,8 +1448,8 @@ h4 {
 
   /* El redactor de comentarios se alinea con la columna de contenido, no con
      toda la ventana, y ya no tiene que dejar hueco para la barra inferior. */
-  .composer,
-  .composer-reply-hint {
+  .composer:not(.en-encaje),
+  .composer-reply-hint:not(.en-encaje) {
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -1436,7 +1462,7 @@ h4 {
     border-bottom: 0;
   }
 
-  .composer-reply-hint {
+  .composer-reply-hint:not(.en-encaje) {
     bottom: 67px;
   }
 
@@ -1466,8 +1492,8 @@ h4 {
     max-width: 760px;
   }
 
-  .composer,
-  .composer-reply-hint {
+  .composer:not(.en-encaje),
+  .composer-reply-hint:not(.en-encaje) {
     max-width: 760px;
   }
 
@@ -1798,9 +1824,9 @@ h4 {
 
 .hoja-pie {
   flex: 0 0 auto;
-  padding: 10px 12px calc(10px + var(--safe-bottom));
+  padding: 10px 14px calc(10px + var(--safe-bottom));
   border-top: 1px solid var(--tdd-line);
-  background: rgba(255, 253, 249, 0.98);
+  background: var(--tdd-surface);
 }
 
 /* Lista de opciones dentro de una hoja. */

@@ -46,7 +46,9 @@ class FavoriteRepository extends ServiceEntityRepository
 
     public function delete(int $userId, int $debateId): void
     {
-        $this->connection->executeStatement(
+        // La clase no tiene propiedad connection: hay que pedirsela al gestor
+        // de entidades, igual que hace upsert.
+        $this->getEntityManager()->getConnection()->executeStatement(
             'DELETE FROM favorites WHERE user_id = :userId AND debate_id = :debateId',
             [
                 'userId'   => $userId,
