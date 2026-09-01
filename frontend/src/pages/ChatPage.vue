@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import { useChatStore } from "@/stores/chat";
 import { useAuthStore } from "@/stores/auth";
 import { useUiStore } from "@/stores/ui";
@@ -76,7 +77,7 @@ const autoGrow = (event) => {
       </RouterLink>
     </div>
 
-    <div v-if="loading" class="spinner" />
+    <Esqueleto v-if="loading" tipo="burbujas" :cantidad="5" />
 
     <div v-else class="chat-scroll">
       <p v-if="!messages.length" class="text-muted" style="text-align: center; padding: 30px 0">

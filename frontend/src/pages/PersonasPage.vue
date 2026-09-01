@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted } from "vue";
 import UserAvatar from "@/components/UserAvatar.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useUsersStore } from "@/stores/users";
 
@@ -16,7 +17,7 @@ onMounted(() => users.loadPersonas());
       Todos son ficticios y generados por IA.
     </p>
 
-    <div v-if="users.loadingPersonas && !users.personas.length" class="spinner" />
+    <Esqueleto v-if="users.loadingPersonas && !users.personas.length" tipo="tarjetas" :cantidad="3" />
 
     <div v-else-if="users.personas.length" class="persona-grid">
       <RouterLink

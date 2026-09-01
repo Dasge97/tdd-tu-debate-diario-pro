@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import UserAvatar from "@/components/UserAvatar.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { socialService } from "@/services";
 import { useAuthStore } from "@/stores/auth";
@@ -119,7 +120,7 @@ const openChat = async (friendship) => {
       </button>
     </form>
 
-    <div v-if="loading" class="spinner" />
+    <Esqueleto v-if="loading" tipo="lista" :cantidad="4" />
 
     <template v-else>
       <template v-if="incoming.length">

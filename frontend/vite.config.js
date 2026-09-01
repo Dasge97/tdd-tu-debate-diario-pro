@@ -33,7 +33,7 @@ export default defineConfig({
         display: "standalone",
         orientation: "portrait",
         background_color: "#f3f1ed",
-        theme_color: "#1f4ba3",
+        theme_color: "#fffdf9",
         categories: ["news", "social"],
         icons: [
           { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },

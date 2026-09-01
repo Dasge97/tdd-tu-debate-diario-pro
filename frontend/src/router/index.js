@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { calcularDireccion, direccion } from "@/composables/useNavegacion";
 
 /**
  * Los debates, los personajes y los perfiles se pueden leer sin cuenta.
@@ -124,13 +125,21 @@ const routes = [
 export const router = createRouter({
   history: createWebHistory("/app/"),
   routes,
+  /* Al volver atras se recupera el sitio donde estabas en la lista. */
   scrollBehavior(to, from, saved) {
-    return saved || { top: 0 };
+    if (saved) {
+      return new Promise((resolver) => {
+        setTimeout(() => resolver(saved), 220);
+      });
+    }
+    return { top: 0 };
   }
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   const auth = useAuthStore();
+
+  direccion.value = calcularDireccion(to, from);
 
   if (!auth.ready) {
     await auth.restore();

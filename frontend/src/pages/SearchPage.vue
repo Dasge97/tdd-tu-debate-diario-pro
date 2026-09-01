@@ -1,6 +1,7 @@
 <script setup>
 import { onBeforeUnmount, ref, watch } from "vue";
 import DebateCard from "@/components/DebateCard.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { debatesService } from "@/services";
 import { useDebatesStore } from "@/stores/debates";
@@ -72,7 +73,7 @@ onBeforeUnmount(() => window.clearTimeout(debounceTimer));
       </button>
     </div>
 
-    <div v-if="searching" class="spinner" />
+    <Esqueleto v-if="searching" tipo="tarjetas" :cantidad="2" />
 
     <DebateCard v-for="debate in results" :key="debate.id" :debate="debate" />
 

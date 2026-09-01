@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import UserAvatar from "@/components/UserAvatar.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import { socialService, usersService } from "@/services";
 import { useAuthStore } from "@/stores/auth";
 import { useChatStore } from "@/stores/chat";
@@ -62,7 +63,7 @@ const openChat = async () => {
 
 <template>
   <section>
-    <div v-if="loading" class="spinner" />
+    <Esqueleto v-if="loading" tipo="ficha" :cantidad="1" />
 
     <p v-else-if="error" class="form-error">{{ error }}</p>
 

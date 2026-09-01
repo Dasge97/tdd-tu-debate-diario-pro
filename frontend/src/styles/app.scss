@@ -40,7 +40,11 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  /* La fuente del sistema hace que la aplicacion se lea como las demas del
+     telefono, y evita el parpadeo de la primera carga mientras baja la fuente
+     de Google. Los titulares siguen en Bitter, que es la marca. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: var(--tdd-ink);
@@ -1244,14 +1248,42 @@ h4 {
 
 /* ---------- Transiciones de pagina ---------- */
 
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.16s ease;
+/* Al entrar en una pantalla, la nueva llega desde la derecha; al volver, se va
+   hacia la derecha. Es el movimiento al que estamos acostumbrados en una app. */
+.pantalla-enter-active,
+.pantalla-leave-active,
+.pantalla-atras-enter-active,
+.pantalla-atras-leave-active {
+  transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.2s ease;
 }
 
-.page-enter-from,
-.page-leave-to {
+.pantalla-enter-from {
+  transform: translateX(22px);
   opacity: 0;
+}
+
+.pantalla-leave-to {
+  transform: translateX(-14px);
+  opacity: 0;
+}
+
+.pantalla-atras-enter-from {
+  transform: translateX(-22px);
+  opacity: 0;
+}
+
+.pantalla-atras-leave-to {
+  transform: translateX(14px);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pantalla-enter-from,
+  .pantalla-leave-to,
+  .pantalla-atras-enter-from,
+  .pantalla-atras-leave-to {
+    transform: none;
+  }
 }
 
 /* ---------- Escritorio ---------- */
@@ -1354,12 +1386,6 @@ h4 {
   /* Lo que en escritorio se muestra de otra forma en la columna lateral. */
   .solo-movil {
     display: none;
-  }
-
-  /* A lo ancho de una tarjeta grande, el boton a pantalla completa sobra. */
-  .debate-card .btn-block {
-    width: auto;
-    min-width: 200px;
   }
 
   /* Sin barra inferior: la navegacion pasa a la cabecera. */
@@ -1539,12 +1565,6 @@ h4 {
     margin-bottom: 11px;
   }
 
-  /* La tarjeta entera abre el debate, asi que el boton grande solo quitaba
-     sitio. Se muestra unicamente en pantallas mas anchas. */
-  .debate-card .btn-block {
-    display: none;
-  }
-
   .debate-card-topbar {
     margin-bottom: 6px;
   }
@@ -1707,5 +1727,273 @@ h4 {
   .textarea {
     min-height: 48px;
     padding: 12px 14px;
+  }
+}
+
+/* ---------- Hoja inferior ---------- */
+
+.hoja-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(20, 23, 31, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.hoja {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 92dvh;
+  height: var(--hoja-alto, 72dvh);
+  background: var(--tdd-surface);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -10px 40px rgba(20, 23, 31, 0.22);
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  overflow: hidden;
+}
+
+/* El asa es tambien la zona por la que se arrastra para cerrar. */
+.hoja-asa {
+  flex: 0 0 auto;
+  padding: 9px 0 5px;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.hoja-asa span {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #cfc8bc;
+}
+
+.hoja-cabecera {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 8px 8px 16px;
+  border-bottom: 1px solid var(--tdd-line);
+}
+
+.hoja-titulo {
+  font-family: "Bitter", Georgia, serif;
+  font-size: 1.02rem;
+}
+
+.hoja-cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 4px 16px 16px;
+}
+
+.hoja-pie {
+  flex: 0 0 auto;
+  padding: 10px 12px calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--tdd-line);
+  background: rgba(255, 253, 249, 0.98);
+}
+
+/* Lista de opciones dentro de una hoja. */
+.hoja-opcion {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(217, 211, 200, 0.6);
+  background: transparent;
+  color: inherit;
+  font-size: 0.96rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hoja-opcion:last-child {
+  border-bottom: 0;
+}
+
+.hoja-opcion:active {
+  background: rgba(31, 75, 163, 0.06);
+}
+
+.hoja-opcion .material-symbols-rounded {
+  color: #5c6674;
+  font-size: 22px;
+}
+
+.hoja-opcion-peligro,
+.hoja-opcion-peligro .material-symbols-rounded {
+  color: var(--tdd-contra);
+}
+
+.hoja-enter-active .hoja,
+.hoja-leave-active .hoja {
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.hoja-enter-active,
+.hoja-leave-active {
+  transition: opacity 0.24s ease;
+}
+
+.hoja-enter-from,
+.hoja-leave-to {
+  opacity: 0;
+}
+
+.hoja-enter-from .hoja,
+.hoja-leave-to .hoja {
+  transform: translateY(100%);
+}
+
+/* En pantallas anchas se comporta como un dialogo centrado. */
+@media (min-width: 700px) {
+  .hoja-fondo {
+    align-items: center;
+  }
+
+  .hoja {
+    width: min(560px, 92vw);
+    height: auto;
+    max-height: 80dvh;
+    border-radius: 20px;
+  }
+
+  .hoja-enter-from .hoja,
+  .hoja-leave-to .hoja {
+    transform: translateY(24px) scale(0.98);
+  }
+
+  .hoja-asa {
+    display: none;
+  }
+
+  .hoja-cabecera {
+    padding-top: 12px;
+  }
+}
+
+/* ---------- Acciones rapidas de la tarjeta ---------- */
+
+.debate-card-cuerpo {
+  position: relative;
+}
+
+.debate-acciones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(217, 211, 200, 0.55);
+}
+
+.debate-acciones-relleno {
+  flex: 1 1 auto;
+}
+
+.accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.accion:active {
+  background: rgba(31, 75, 163, 0.08);
+}
+
+.accion .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.accion-activa,
+.accion-activa .material-symbols-rounded {
+  color: var(--tdd-contra);
+}
+
+/* El boton de entrar solo aparece cuando hay ancho de sobra. */
+.solo-ancho {
+  display: none;
+}
+
+/* Corazon que late al tocar dos veces, como en Instagram. */
+.latido-corazon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 96px;
+  color: #fff;
+  font-variation-settings: "FILL" 1;
+  text-shadow: 0 4px 18px rgba(20, 23, 31, 0.35);
+  pointer-events: none;
+}
+
+.latido-enter-active {
+  animation: tdd-latido 0.7s ease forwards;
+}
+
+.latido-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.latido-leave-to {
+  opacity: 0;
+}
+
+@keyframes tdd-latido {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@media (min-width: 700px) {
+  .solo-ancho {
+    display: inline-flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latido-enter-active {
+    animation: none;
   }
 }

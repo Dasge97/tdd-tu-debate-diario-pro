@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import UserAvatar from "@/components/UserAvatar.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { personasService, usersService } from "@/services";
 import { errorMessage } from "@/api/client";
@@ -33,7 +34,7 @@ onMounted(async () => {
 
 <template>
   <section>
-    <div v-if="loading" class="spinner" />
+    <Esqueleto v-if="loading" tipo="ficha" :cantidad="1" />
 
     <p v-else-if="error" class="form-error">{{ error }}</p>
 

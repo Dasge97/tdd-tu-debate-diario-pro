@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted } from "vue";
 import UserAvatar from "@/components/UserAvatar.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useChatStore } from "@/stores/chat";
 import { formatRelative } from "@/utils/format";
@@ -17,7 +18,7 @@ onMounted(() => chat.loadConversations(true));
       <RouterLink class="btn btn-ghost btn-sm" :to="{ name: 'friends' }">Amigos</RouterLink>
     </div>
 
-    <div v-if="chat.loading && !chat.conversations.length" class="spinner" />
+    <Esqueleto v-if="chat.loading && !chat.conversations.length" tipo="lista" :cantidad="5" />
 
     <div v-else-if="chat.conversations.length" class="surface list-card">
       <RouterLink

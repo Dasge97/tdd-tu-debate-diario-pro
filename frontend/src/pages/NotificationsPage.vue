@@ -2,6 +2,7 @@
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import EmptyState from "@/components/EmptyState.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import { useNotificationsStore } from "@/stores/notifications";
 import { useUiStore } from "@/stores/ui";
 import { errorMessage } from "@/api/client";
@@ -60,7 +61,7 @@ const markAll = async () => {
       </button>
     </div>
 
-    <div v-if="notifications.loading && !notifications.items.length" class="spinner" />
+    <Esqueleto v-if="notifications.loading && !notifications.items.length" tipo="lista" :cantidad="5" />
 
     <div v-else-if="notifications.items.length" class="surface list-card">
       <button

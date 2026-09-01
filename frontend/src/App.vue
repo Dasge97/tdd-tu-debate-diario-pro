@@ -11,6 +11,8 @@ import { useChatStore } from "@/stores/chat";
 import { useNotificationsStore } from "@/stores/notifications";
 import { useFavoritesStore } from "@/stores/favorites";
 import { wsClient } from "@/api/ws";
+import { direccion } from "@/composables/useNavegacion";
+import { useGestoVolver } from "@/composables/useGestoVolver";
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -18,6 +20,8 @@ const ui = useUiStore();
 const chat = useChatStore();
 const notifications = useNotificationsStore();
 const favorites = useFavoritesStore();
+
+useGestoVolver();
 
 // La cabecera y la barra inferior se ven tambien sin cuenta: la lectura es
 // publica. Solo la pantalla de entrada y la de registro van sin ellas.
@@ -61,9 +65,9 @@ watch(
     </div>
 
     <main class="app-main">
-      <RouterView v-slot="{ Component }">
-        <Transition name="page" mode="out-in">
-          <component :is="Component" />
+      <RouterView v-slot="{ Component, route }">
+        <Transition :name="direccion === 'atras' ? 'pantalla-atras' : 'pantalla'" mode="out-in">
+          <component :is="Component" :key="route.path" />
         </Transition>
       </RouterView>
     </main>

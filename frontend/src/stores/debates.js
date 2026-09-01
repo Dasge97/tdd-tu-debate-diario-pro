@@ -14,6 +14,8 @@ export const useDebatesStore = defineStore("debates", {
     today: [],
     // true cuando en today no hay debates de hoy y se muestran los ultimos.
     todayEsReciente: false,
+    // Pagina ya pedida en la carga continua de la pestana Hoy.
+    paginaHoy: 1,
     topWeek: [],
     ticker: [],
     byId: {},
@@ -70,6 +72,8 @@ export const useDebatesStore = defineStore("debates", {
           this.todayEsReciente = false;
         }
 
+        this.paginaHoy = 1;
+
         this.today = data;
         this.cache(data);
         this.loadPositionsFor(data);
@@ -97,6 +101,30 @@ export const useDebatesStore = defineStore("debates", {
       } finally {
         this.loadingWeek = false;
       }
+    },
+
+    /**
+     * Trae la pagina siguiente de la pestana Hoy y devuelve cuantos debates ha
+     * anadido. Solo tiene sentido cuando se estan mostrando los ultimos
+     * debates: la lista de hoy no se pagina.
+     */
+    async cargarMasHoy() {
+      if (!this.todayEsReciente) return 0;
+
+      const siguiente = this.paginaHoy + 1;
+      const data = await debatesService.recent(siguiente);
+
+      const conocidos = new Set(this.today.map((d) => d.id));
+      const nuevos = data.filter((d) => !conocidos.has(d.id));
+
+      if (nuevos.length) {
+        this.today = [...this.today, ...nuevos];
+        this.cache(nuevos);
+        this.loadPositionsFor(nuevos);
+      }
+
+      this.paginaHoy = siguiente;
+      return nuevos.length;
     },
 
     async fetchTicker() {

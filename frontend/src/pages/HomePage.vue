@@ -4,7 +4,11 @@ import { useRouter } from "vue-router";
 import DebateCard from "@/components/DebateCard.vue";
 import DebateSkeleton from "@/components/DebateSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import Esqueleto from "@/components/Esqueleto.vue";
 import Lateral from "@/components/Lateral.vue";
+import IndicadorRecarga from "@/components/IndicadorRecarga.vue";
+import { useTirarParaActualizar } from "@/composables/useTirarParaActualizar";
+import { useCargaContinua } from "@/composables/useCargaContinua";
 import UserAvatar from "@/components/UserAvatar.vue";
 import { useDebatesStore } from "@/stores/debates";
 import { useUsersStore } from "@/stores/users";
@@ -44,10 +48,25 @@ onMounted(() => {
 });
 
 const openDebate = (id) => router.push({ name: "debate", params: { id } });
+
+/* Deslizar hacia abajo recarga la pestana que se este viendo. */
+const { avance, recargando } = useTirarParaActualizar(async () => {
+  if (tab.value === "hoy") await debates.fetchToday(true);
+  if (tab.value === "semana") await debates.fetchTopWeek(true);
+  if (tab.value === "protagonistas") await users.loadProtagonistas(true);
+  debates.fetchTicker();
+});
+
+/* Al llegar al final de la lista se pide la pagina siguiente. */
+const { centinela, cargando: cargandoMas, seAcabo } = useCargaContinua(() =>
+  debates.cargarMasHoy()
+);
 </script>
 
 <template>
   <section class="con-lateral">
+    <IndicadorRecarga :avance="avance" :recargando="recargando" />
+
     <div>
     <!-- Cinta de titulares: los debates con más participación, deslizables. -->
       <div v-if="debates.ticker.length" class="ticker solo-movil" aria-label="Debates destacados">
@@ -101,6 +120,18 @@ const openDebate = (id) => router.push({ name: "debate", params: { id } });
         title="Todavía no hay debates hoy"
         text="Los debates del día se publican cada mañana. Vuelve en un rato."
       />
+
+      <div ref="centinela" />
+
+      <div v-if="cargandoMas" class="skeleton" style="height: 180px; margin-bottom: 14px" />
+
+      <p
+        v-else-if="seAcabo && today.length > 8"
+        class="text-muted"
+        style="text-align: center; padding: 18px 0; font-size: 0.86rem"
+      >
+        No hay más debates por ahora.
+      </p>
     </div>
 
     <!-- SEMANA -->
@@ -128,7 +159,7 @@ const openDebate = (id) => router.push({ name: "debate", params: { id } });
         <span class="text-muted" style="font-size: 0.82rem">Por fiabilidad</span>
       </div>
 
-      <div v-if="users.loadingProtagonistas && !users.protagonistas.length" class="spinner" />
+      <Esqueleto v-if="users.loadingProtagonistas && !users.protagonistas.length" tipo="lista" :cantidad="5" />
 
       <div v-else-if="users.protagonistas.length" class="surface list-card">
         <RouterLink
