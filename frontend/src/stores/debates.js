@@ -12,6 +12,8 @@ import { errorMessage } from "@/api/client";
 export const useDebatesStore = defineStore("debates", {
   state: () => ({
     today: [],
+    // true cuando en today no hay debates de hoy y se muestran los ultimos.
+    todayEsReciente: false,
     topWeek: [],
     ticker: [],
     byId: {},
@@ -57,7 +59,17 @@ export const useDebatesStore = defineStore("debates", {
       this.loadingToday = true;
       this.error = null;
       try {
-        const data = await debatesService.today();
+        let data = await debatesService.today();
+
+        // Algunos dias el worker todavia no ha publicado. En vez de dejar la
+        // pantalla vacia, se muestran los ultimos debates que haya.
+        if (!data.length) {
+          data = await debatesService.recent();
+          this.todayEsReciente = data.length > 0;
+        } else {
+          this.todayEsReciente = false;
+        }
+
         this.today = data;
         this.cache(data);
         this.loadPositionsFor(data);

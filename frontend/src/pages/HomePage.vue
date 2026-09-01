@@ -81,7 +81,9 @@ const openDebate = (id) => router.push({ name: "debate", params: { id } });
     <!-- HOY -->
     <div v-if="tab === 'hoy'">
       <div class="section-head">
-        <h2 class="section-title">Debates de hoy</h2>
+        <h2 class="section-title">
+          {{ debates.todayEsReciente ? "Últimos debates" : "Debates de hoy" }}
+        </h2>
         <RouterLink class="btn btn-ghost btn-sm" :to="{ name: 'propose' }">Proponer</RouterLink>
       </div>
 
