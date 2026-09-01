@@ -23,14 +23,18 @@
   box-sizing: border-box;
 }
 
+/* Solo html y body cortan el desbordamiento lateral. Ponerlo tambien en #app
+   creaba un contenedor de scroll anidado, y con overscroll-behavior-y: none en
+   el body la rueda del raton dejaba de mover la pagina. */
 html,
-body,
-#app {
+body {
   overflow-x: hidden;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* contain evita el tiron para recargar sin bloquear el scroll normal. */
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -46,7 +50,6 @@ body {
     var(--tdd-paper);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: none;
 }
 
 /* Nada de resaltado azul al tocar: se debe sentir como una app nativa. */
@@ -1190,6 +1193,22 @@ h4 {
   box-shadow: 0 14px 36px rgba(20, 23, 31, 0.16);
 }
 
+.install-prompt-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.install-prompt-titulo {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.install-prompt-detalle {
+  font-size: 0.82rem;
+  color: var(--tdd-muted);
+  line-height: 1.45;
+}
+
 .offline-banner {
   padding: 8px 14px;
   background: #8f715f;
@@ -1238,9 +1257,21 @@ h4 {
     max-width: 720px;
   }
 
+  /* En escritorio el aviso de instalacion se recoge a la esquina inferior
+     derecha, en vez de ocupar todo el ancho de la ventana. */
+  .install-prompt {
+    left: auto;
+    right: 20px;
+    bottom: 20px;
+    width: 340px;
+    border-radius: 16px;
+  }
+
   .tabbar {
-    max-width: 720px;
     left: 50%;
+    right: auto;
+    width: 100%;
+    max-width: 720px;
     transform: translateX(-50%);
     border-radius: 20px 20px 0 0;
     border-left: 1px solid var(--tdd-line);

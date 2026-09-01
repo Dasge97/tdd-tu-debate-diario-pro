@@ -6,6 +6,7 @@ import { setSessionExpiredHandler } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { useUiStore } from "@/stores/ui";
 import { wsClient } from "@/api/ws";
+import { instalacion } from "@/utils/instalacion";
 import "@/styles/app.scss";
 
 const app = createApp(App);
@@ -18,6 +19,14 @@ const auth = useAuthStore(pinia);
 const ui = useUiStore(pinia);
 
 ui.watchConnection();
+
+/* El navegador dispara beforeinstallprompt una sola vez. Se captura aqui, no en
+   el aviso flotante, para que Ajustes pueda abrir el dialogo aunque el aviso
+   este cerrado. */
+window.addEventListener("beforeinstallprompt", (evento) => {
+  evento.preventDefault();
+  instalacion.guardarEvento(evento);
+});
 
 /* Si el refresco de token falla, se cierra la sesion y se vuelve a la entrada. */
 setSessionExpiredHandler(() => {
