@@ -1837,17 +1837,19 @@ h4 {
 
 .hoja-pie {
   flex: 0 0 auto;
-  /* Con max en vez de suma, el margen de la barra de inicio del telefono no se
-     acumula con el relleno propio y no queda un hueco grande bajo el campo. */
-  padding: 10px 14px max(10px, var(--safe-bottom));
+  /* La barra de inicio del telefono mide unos pocos pixeles y va centrada, asi
+     que no hace falta reservar su margen entero: con la mitad basta para que el
+     campo no quede debajo, y no se abre un hueco grande. */
+  padding: 8px 14px max(8px, calc(var(--safe-bottom) - 16px));
   border-top: 1px solid var(--tdd-line);
   background: var(--tdd-surface);
 }
 
-/* Con el teclado abierto no hay barra de inicio a la vista, asi que el margen
-   de seguridad sobra y solo dejaria un hueco. */
+/* Con el teclado abierto no hay barra de inicio a la vista, asi que el campo
+   puede quedar pegado al borde. */
 .hoja.con-teclado .hoja-pie {
-  padding-bottom: 10px;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .hoja.con-teclado {

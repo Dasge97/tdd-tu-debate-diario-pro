@@ -40,6 +40,15 @@ const medirVentana = () => {
   hayTeclado.value = window.innerHeight - vv.height > 120;
 };
 
+/**
+ * El teclado tarda un momento en terminar de subir, y la primera medida se
+ * queda corta. Se vuelve a medir varias veces durante medio segundo.
+ */
+const medirVariasVeces = () => {
+  medirVentana();
+  [60, 140, 260, 420].forEach((espera) => window.setTimeout(medirVentana, espera));
+};
+
 let inicioY = 0;
 let scrollAlAbrir = 0;
 
@@ -78,15 +87,20 @@ watch(
 
 onMounted(() => {
   medirVentana();
-  window.visualViewport?.addEventListener("resize", medirVentana);
+  window.visualViewport?.addEventListener("resize", medirVariasVeces);
   window.visualViewport?.addEventListener("scroll", medirVentana);
+  // Al enfocar el campo, el teclado empieza a subir antes de que llegue resize.
+  window.addEventListener("focusin", medirVariasVeces);
+  window.addEventListener("focusout", medirVariasVeces);
 });
 
 onBeforeUnmount(() => {
   if (props.abierta) liberarFondo();
   window.removeEventListener("keydown", alTeclado);
-  window.visualViewport?.removeEventListener("resize", medirVentana);
+  window.visualViewport?.removeEventListener("resize", medirVariasVeces);
   window.visualViewport?.removeEventListener("scroll", medirVentana);
+  window.removeEventListener("focusin", medirVariasVeces);
+  window.removeEventListener("focusout", medirVariasVeces);
 });
 
 /* Arrastrar hacia abajo para cerrar. Solo cuenta si la lista esta arriba del
