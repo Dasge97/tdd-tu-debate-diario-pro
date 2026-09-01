@@ -1331,6 +1331,11 @@ h4 {
   color: var(--tdd-primary);
 }
 
+.lateral-item .list-row-title,
+.lateral-item .list-row-sub {
+  display: block;
+}
+
 @media (min-width: 1000px) {
   :root {
     --tdd-header-h: 64px;
@@ -1339,6 +1344,12 @@ h4 {
   /* Lo que en escritorio se muestra de otra forma en la columna lateral. */
   .solo-movil {
     display: none;
+  }
+
+  /* A lo ancho de una tarjeta grande, el boton a pantalla completa sobra. */
+  .debate-card .btn-block {
+    width: auto;
+    min-width: 200px;
   }
 
   /* Sin barra inferior: la navegacion pasa a la cabecera. */
