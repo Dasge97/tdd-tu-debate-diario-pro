@@ -4,6 +4,7 @@ import UserAvatar from "@/components/UserAvatar.vue";
 import { formatRelative } from "@/utils/format";
 import { participationService } from "@/services";
 import { useUiStore } from "@/stores/ui";
+import { useSesion } from "@/composables/useSesion";
 import { errorMessage } from "@/api/client";
 
 const props = defineProps({
@@ -14,6 +15,7 @@ const props = defineProps({
 const emit = defineEmits(["reply"]);
 
 const ui = useUiStore();
+const { exigeSesion } = useSesion();
 
 /**
  * El voto propio no viaja en la respuesta de la API, asi que se recuerda en el
@@ -37,6 +39,7 @@ const author = computed(() => props.comment.user || {});
 const replies = computed(() => props.comment.replies || []);
 
 const vote = async (value) => {
+  if (!exigeSesion("votar comentarios")) return;
   if (sending.value) return;
 
   const next = myVote.value === value ? 0 : value;
@@ -63,6 +66,8 @@ const vote = async (value) => {
 };
 
 const report = async () => {
+  if (!exigeSesion("reportar")) return;
+
   try {
     await participationService.reportComment(props.comment.id, "Reportado desde la web");
     ui.success("Comentario reportado. Gracias.");

@@ -60,12 +60,9 @@ class ParticipationController extends AbstractController
     #[Route('/debates/{id}/comments', name: 'api_comments_list', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function getComments(int $id, Request $request): JsonResponse
     {
+        // Los comentarios se pueden leer sin cuenta; para escribir si hace falta.
         /** @var User|null $user */
         $user = $request->attributes->get('currentUser');
-
-        if ($user === null) {
-            throw new \RuntimeException('UNAUTHORIZED: authentication required');
-        }
 
         // When a specific parent is requested, return a flat list of its direct replies
         if ($request->query->has('parentId')) {

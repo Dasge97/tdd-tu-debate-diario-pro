@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import { useDebatesStore } from "@/stores/debates";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useUiStore } from "@/stores/ui";
+import { useSesion } from "@/composables/useSesion";
 import { debatesService, participationService } from "@/services";
 import { errorMessage } from "@/api/client";
 import { formatDateTime, plural, toParagraphs } from "@/utils/format";
@@ -18,6 +19,7 @@ const props = defineProps({
 const debates = useDebatesStore();
 const favorites = useFavoritesStore();
 const ui = useUiStore();
+const { auth, exigeSesion } = useSesion();
 
 const debateId = Number(props.id);
 
@@ -89,6 +91,8 @@ onMounted(() => {
 });
 
 const setPosition = async (position) => {
+  if (!exigeSesion("fijar tu posición")) return;
+
   const previous = myPosition.value;
   myPosition.value = position;
 
@@ -105,6 +109,8 @@ const setPosition = async (position) => {
 };
 
 const toggleFavorite = async () => {
+  if (!exigeSesion("guardar debates")) return;
+
   try {
     const favorited = await favorites.toggle(debateId);
     ui.success(favorited ? "Guardado en favoritos" : "Quitado de favoritos");
@@ -114,12 +120,16 @@ const toggleFavorite = async () => {
 };
 
 const startReply = async (comment) => {
+  if (!exigeSesion("responder")) return;
+
   replyTo.value = comment;
   await nextTick();
   composer.value?.focus();
 };
 
 const send = async () => {
+  if (!exigeSesion("comentar")) return;
+
   const content = draft.value.trim();
   if (!content || sending.value) return;
 
@@ -137,6 +147,8 @@ const send = async () => {
 };
 
 const report = async () => {
+  if (!exigeSesion("reportar")) return;
+
   try {
     await debatesService.report(debateId, "Reportado desde la web");
     ui.success("Debate reportado. Gracias.");
@@ -304,7 +316,7 @@ const autoGrow = (event) => {
           ref="composer"
           v-model="draft"
           rows="1"
-          placeholder="Escribe tu argumento…"
+          :placeholder="auth.isAuthenticated ? 'Escribe tu argumento…' : 'Entra para comentar'"
           aria-label="Escribe tu comentario"
           @input="autoGrow"
         />
@@ -312,7 +324,7 @@ const autoGrow = (event) => {
           type="button"
           class="composer-send"
           aria-label="Publicar comentario"
-          :disabled="!draft.trim() || sending"
+          :disabled="auth.isAuthenticated && (!draft.trim() || sending)"
           @click="send"
         >
           <span class="material-symbols-rounded">send</span>

@@ -156,12 +156,17 @@
 
         .hero p { color: var(--muted); font-size: 1.05rem; max-width: 560px; margin: 0 0 26px; }
 
-        .cta-group { display: flex; flex-direction: column; gap: 10px; }
+        .hero-grid { display: grid; gap: 34px; }
 
-        .cta-note { margin: 14px 0 0; font-size: .84rem; color: var(--muted); }
+        .cta-group { display: flex; flex-direction: column; gap: 12px; }
+
+        .cta-note { margin: 18px 0 0; font-size: .84rem; line-height: 1.5; color: var(--muted); }
+
+        /* Mas especifico que .hero p, que si no le quitaria el margen de arriba. */
+        .hero .cta-note { margin: 18px 0 0; }
 
         /* Muestra de tarjeta de debate: lo mismo que verá al entrar. */
-        .preview { margin-top: 34px; padding: 16px; }
+        .preview { padding: 16px; align-self: start; }
 
         .preview-author { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
 
@@ -292,7 +297,7 @@
 
         @media (min-width: 720px) {
             .header-links { display: flex; }
-            .cta-group { flex-direction: row; }
+            .cta-group { flex-direction: row; gap: 14px; }
             .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
             .personas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .features { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
@@ -300,7 +305,16 @@
             .footer-inner { flex-direction: row; justify-content: space-between; align-items: center; }
             section { padding: 72px 0; }
             .hero { padding-top: 72px; padding-bottom: 60px; }
-            .preview { max-width: 520px; }
+        }
+
+        @media (min-width: 1000px) {
+            /* Portada a dos columnas: el texto a la izquierda y el ejemplo de
+               debate a la derecha, para no dejar media pantalla vacia. */
+            .hero-grid {
+                grid-template-columns: minmax(0, 1fr) 440px;
+                gap: 56px;
+                align-items: center;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -327,23 +341,26 @@
 
 <!-- PORTADA -->
 <div class="wrap hero">
-    <div class="mini-label">Actualidad española · Debate real</div>
+  <div class="hero-grid">
+    <div class="hero-texto">
+        <div class="mini-label">Actualidad española · Debate real</div>
 
-    <h1>El debate de hoy,<br><em>cada día</em></h1>
+        <h1>El debate de hoy,<br><em>cada día</em></h1>
 
-    <p>
-        Cinco temas de actualidad cada mañana, contados por ocho personajes editoriales
-        que no piensan igual. Fija tu posición, argumenta y lee a quien te lleva la contraria.
-    </p>
+        <p>
+            Cinco temas de actualidad cada mañana, contados por ocho personajes editoriales
+            que no piensan igual. Fija tu posición, argumenta y lee a quien te lleva la contraria.
+        </p>
 
-    <div class="cta-group">
-        <a href="/app/" class="btn btn-primary">Entrar a los debates de hoy</a>
-        <a href="#instalar" class="btn btn-outline">Instalarla en el móvil</a>
+        <div class="cta-group">
+            <a href="/app/" class="btn btn-primary">Entrar a los debates de hoy</a>
+            <a href="#instalar" class="btn btn-outline">Instalarla en el móvil</a>
+        </div>
+
+        <p class="cta-note">
+            Funciona en el navegador y se instala como una app, sin pasar por ninguna tienda.
+        </p>
     </div>
-
-    <p class="cta-note">
-        Funciona en el navegador y se instala como una app, sin pasar por ninguna tienda.
-    </p>
 
     <!-- Muestra de lo que se ve al entrar. -->
     <article class="surface preview" aria-label="Ejemplo de debate">
@@ -377,6 +394,7 @@
 
         <div class="preview-meta">412 votos · 86 comentarios</div>
     </article>
+  </div>
 </div>
 
 <!-- CÓMO FUNCIONA -->

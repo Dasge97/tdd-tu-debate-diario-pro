@@ -22,9 +22,9 @@ class CommentService
     ) {
     }
 
-    public function getComments(int $debateId, ?int $parentId, User $currentUser): array
+    public function getComments(int $debateId, ?int $parentId, ?User $currentUser): array
     {
-        $excludeShadowBanned = !$currentUser->isShadowBanned();
+        $excludeShadowBanned = $currentUser === null || !$currentUser->isShadowBanned();
         return $this->commentRepository->findByDebate($debateId, $parentId, $excludeShadowBanned);
     }
 
@@ -32,9 +32,9 @@ class CommentService
      * Returns all comments for a debate (including replies), allowing the caller
      * to group them into a parent → children structure efficiently.
      */
-    public function getAllComments(int $debateId, User $currentUser): array
+    public function getAllComments(int $debateId, ?User $currentUser): array
     {
-        $excludeShadowBanned = !$currentUser->isShadowBanned();
+        $excludeShadowBanned = $currentUser === null || !$currentUser->isShadowBanned();
         return $this->commentRepository->findAllByDebate($debateId, $excludeShadowBanned);
     }
 

@@ -2,8 +2,9 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
 /**
- * Toda la API bajo /api/v1 exige token salvo login, registro y refresco,
- * asi que cada pantalla de contenido requiere sesion iniciada.
+ * Los debates, los personajes y los perfiles se pueden leer sin cuenta.
+ * Las pantallas marcadas con requiereSesion mandan a la pantalla de entrada,
+ * guardando en la consulta la direccion a la que se queria ir.
  */
 const routes = [
   {
@@ -35,7 +36,7 @@ const routes = [
     path: "/proponer",
     name: "propose",
     component: () => import("@/pages/ProposeDebatePage.vue"),
-    meta: { title: "Proponer debate", back: true }
+    meta: { requiereSesion: true, title: "Proponer debate", back: true }
   },
   {
     path: "/buscar",
@@ -60,44 +61,44 @@ const routes = [
     path: "/mensajes",
     name: "conversations",
     component: () => import("@/pages/ConversationsPage.vue"),
-    meta: { title: "Mensajes", tab: "chat" }
+    meta: { requiereSesion: true, title: "Mensajes", tab: "chat" }
   },
   {
     path: "/mensajes/:id",
     name: "chat",
     component: () => import("@/pages/ChatPage.vue"),
     props: true,
-    meta: { title: "Conversación", back: true, hideTabbar: true }
+    meta: { requiereSesion: true, title: "Conversación", back: true, hideTabbar: true }
   },
   {
     path: "/amigos",
     name: "friends",
     component: () => import("@/pages/FriendsPage.vue"),
-    meta: { title: "Amigos", back: true }
+    meta: { requiereSesion: true, title: "Amigos", back: true }
   },
   {
     path: "/notificaciones",
     name: "notifications",
     component: () => import("@/pages/NotificationsPage.vue"),
-    meta: { title: "Notificaciones", back: true }
+    meta: { requiereSesion: true, title: "Notificaciones", back: true }
   },
   {
     path: "/perfil",
     name: "profile",
     component: () => import("@/pages/MyProfilePage.vue"),
-    meta: { title: "Mi perfil", tab: "profile" }
+    meta: { requiereSesion: true, title: "Mi perfil", tab: "profile" }
   },
   {
     path: "/perfil/editar",
     name: "edit-profile",
     component: () => import("@/pages/EditProfilePage.vue"),
-    meta: { title: "Editar perfil", back: true }
+    meta: { requiereSesion: true, title: "Editar perfil", back: true }
   },
   {
     path: "/perfil/favoritos",
     name: "favorites",
     component: () => import("@/pages/FavoritesPage.vue"),
-    meta: { title: "Favoritos", back: true }
+    meta: { requiereSesion: true, title: "Favoritos", back: true }
   },
   {
     path: "/usuario/:username",
@@ -110,7 +111,7 @@ const routes = [
     path: "/ajustes",
     name: "settings",
     component: () => import("@/pages/SettingsPage.vue"),
-    meta: { title: "Ajustes", back: true }
+    meta: { requiereSesion: true, title: "Ajustes", back: true }
   },
   {
     path: "/:pathMatch(.*)*",
@@ -135,7 +136,7 @@ router.beforeEach(async (to) => {
     await auth.restore();
   }
 
-  if (!to.meta.public && !auth.isAuthenticated) {
+  if (to.meta.requiereSesion && !auth.isAuthenticated) {
     return { name: "login", query: { destino: to.fullPath } };
   }
 

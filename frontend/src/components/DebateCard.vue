@@ -7,6 +7,7 @@ import { useDebatesStore } from "@/stores/debates";
 import { plural } from "@/utils/format";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useUiStore } from "@/stores/ui";
+import { useSesion } from "@/composables/useSesion";
 import { errorMessage } from "@/api/client";
 
 const props = defineProps({
@@ -17,6 +18,7 @@ const router = useRouter();
 const debates = useDebatesStore();
 const favorites = useFavoritesStore();
 const ui = useUiStore();
+const { auth, exigeSesion } = useSesion();
 
 const percentages = computed(() => debates.percentagesFor(props.debate.id));
 const isFavorite = computed(() => favorites.isFavorite(props.debate.id));
@@ -26,6 +28,8 @@ const author = computed(() => props.debate.createdBy || null);
 const open = () => router.push({ name: "debate", params: { id: props.debate.id } });
 
 const toggleFavorite = async () => {
+  if (!exigeSesion("guardar debates")) return;
+
   try {
     const favorited = await favorites.toggle(props.debate.id);
     ui.success(favorited ? "Guardado en favoritos" : "Quitado de favoritos");

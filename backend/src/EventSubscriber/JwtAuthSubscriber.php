@@ -24,6 +24,23 @@ class JwtAuthSubscriber implements EventSubscriberInterface
         '/api/v1/worker/recent-topics',
     ];
 
+    /**
+     * Lectura abierta: cualquiera puede leer los debates, sus comentarios y las
+     * fichas de los personajes sin tener cuenta. Escribir (comentar, votar,
+     * proponer, chatear) sigue exigiendo token.
+     *
+     * Cada patron es una expresion regular sobre la ruta, y solo aplica a GET.
+     */
+    private const PUBLIC_READ_PATTERNS = [
+        '#^/api/v1/debates$#',
+        '#^/api/v1/debates/(ticker|top-today|top-week|recent|today|trending|search)$#',
+        '#^/api/v1/debates/\d+$#',
+        '#^/api/v1/debates/\d+/(positions|comments)$#',
+        '#^/api/v1/personas$#',
+        '#^/api/v1/personas/[^/]+/debates$#',
+        '#^/api/v1/users/protagonistas$#',
+    ];
+
     public function __construct(
         private readonly JwtService $jwtService,
         private readonly UserRepository $userRepository
@@ -63,8 +80,15 @@ class JwtAuthSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $lecturaAbierta = $this->isPublicRead($request->getMethod(), $path);
+
         $authHeader = $request->headers->get('Authorization', '');
         if (!str_starts_with($authHeader, 'Bearer ')) {
+            if ($lecturaAbierta) {
+                // Sin sesion: el controlador recibe currentUser a null.
+                return;
+            }
+
             throw new \RuntimeException('UNAUTHORIZED: missing token');
         }
 
@@ -73,6 +97,10 @@ class JwtAuthSubscriber implements EventSubscriberInterface
         try {
             $payload = $this->jwtService->decode($token);
         } catch (\Exception $e) {
+            if ($lecturaAbierta) {
+                return;
+            }
+
             throw new \RuntimeException('UNAUTHORIZED: invalid token');
         }
 
@@ -98,5 +126,21 @@ class JwtAuthSubscriber implements EventSubscriberInterface
 
         $request->attributes->set('currentUser', $user);
         $request->attributes->set('jwtPayload', $payload);
+    }
+
+    /** Indica si la ruta se puede leer sin haber iniciado sesion. */
+    private function isPublicRead(string $method, string $path): bool
+    {
+        if ($method !== 'GET') {
+            return false;
+        }
+
+        foreach (self::PUBLIC_READ_PATTERNS as $pattern) {
+            if (preg_match($pattern, $path) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

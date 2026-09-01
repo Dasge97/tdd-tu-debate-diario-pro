@@ -2,10 +2,12 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useNotificationsStore } from "@/stores/notifications";
+import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
 const notifications = useNotificationsStore();
+const auth = useAuthStore();
 
 const showBack = computed(() => Boolean(route.meta.back));
 const title = computed(() => route.meta.title || "TuDebateDiario");
@@ -35,17 +37,27 @@ const goBack = () => {
 
     <span class="header-spacer" />
 
-    <RouterLink
-      class="icon-btn"
-      :to="{ name: 'notifications' }"
-      aria-label="Notificaciones"
-    >
-      <span class="material-symbols-rounded">notifications</span>
-      <span v-if="notifications.unreadCount > 0" class="icon-badge">{{ unread }}</span>
-    </RouterLink>
+    <template v-if="auth.isAuthenticated">
+      <RouterLink
+        class="icon-btn"
+        :to="{ name: 'notifications' }"
+        aria-label="Notificaciones"
+      >
+        <span class="material-symbols-rounded">notifications</span>
+        <span v-if="notifications.unreadCount > 0" class="icon-badge">{{ unread }}</span>
+      </RouterLink>
 
-    <RouterLink class="icon-btn" :to="{ name: 'settings' }" aria-label="Ajustes">
-      <span class="material-symbols-rounded">settings</span>
+      <RouterLink class="icon-btn" :to="{ name: 'settings' }" aria-label="Ajustes">
+        <span class="material-symbols-rounded">settings</span>
+      </RouterLink>
+    </template>
+
+    <RouterLink
+      v-else
+      class="btn btn-primary btn-sm"
+      :to="{ name: 'login', query: { destino: route.fullPath } }"
+    >
+      Entrar
     </RouterLink>
   </header>
 </template>

@@ -19,7 +19,9 @@ const chat = useChatStore();
 const notifications = useNotificationsStore();
 const favorites = useFavoritesStore();
 
-const showChrome = computed(() => auth.isAuthenticated && route.meta.chrome !== false);
+// La cabecera y la barra inferior se ven tambien sin cuenta: la lectura es
+// publica. Solo la pantalla de entrada y la de registro van sin ellas.
+const showChrome = computed(() => route.meta.chrome !== false);
 const showTabbar = computed(() => showChrome.value && !route.meta.hideTabbar);
 
 /** Datos que la cabecera y la barra inferior necesitan en todas las pantallas. */

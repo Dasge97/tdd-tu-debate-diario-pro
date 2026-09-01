@@ -2,10 +2,12 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useChatStore } from "@/stores/chat";
+import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
 const chat = useChatStore();
+const auth = useAuthStore();
 
 const tabs = [
   { key: "home", label: "Hoy", icon: "today", to: { name: "home" } },
@@ -33,7 +35,10 @@ const unread = computed(() => (chat.unreadTotal > 9 ? "9+" : String(chat.unreadT
     >
       <span class="material-symbols-rounded">{{ tab.icon }}</span>
       <span>{{ tab.label }}</span>
-      <span v-if="tab.key === 'chat' && chat.unreadTotal > 0" class="icon-badge">
+      <span
+        v-if="auth.isAuthenticated && tab.key === 'chat' && chat.unreadTotal > 0"
+        class="icon-badge"
+      >
         {{ unread }}
       </span>
     </button>
