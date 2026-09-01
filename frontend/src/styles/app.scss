@@ -1837,9 +1837,23 @@ h4 {
 
 .hoja-pie {
   flex: 0 0 auto;
-  padding: 10px 14px calc(10px + var(--safe-bottom));
+  /* Con max en vez de suma, el margen de la barra de inicio del telefono no se
+     acumula con el relleno propio y no queda un hueco grande bajo el campo. */
+  padding: 10px 14px max(10px, var(--safe-bottom));
   border-top: 1px solid var(--tdd-line);
   background: var(--tdd-surface);
+}
+
+/* Con el teclado abierto no hay barra de inicio a la vista, asi que el margen
+   de seguridad sobra y solo dejaria un hueco. */
+.hoja.con-teclado .hoja-pie {
+  padding-bottom: 10px;
+}
+
+.hoja.con-teclado {
+  height: 100%;
+  max-height: 100%;
+  border-radius: 16px 16px 0 0;
 }
 
 /* Lista de opciones dentro de una hoja. */

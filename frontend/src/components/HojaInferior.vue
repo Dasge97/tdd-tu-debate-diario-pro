@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 /**
  * Hoja que sube desde abajo y se superpone al contenido, como la de
@@ -21,6 +21,24 @@ const emit = defineEmits(["cerrar"]);
 const panel = ref(null);
 const arrastre = ref(0);
 const arrastrando = ref(false);
+
+/**
+ * Con el teclado abierto, iOS encoge la ventana visible pero no la de
+ * maquetado. Sin ajustar nada, la parte de abajo de la hoja queda tapada por
+ * el teclado y aparecen huecos. visualViewport dice cuanto espacio queda.
+ */
+const altoVisible = ref(null);
+const desplazamiento = ref(0);
+const hayTeclado = ref(false);
+
+const medirVentana = () => {
+  const vv = window.visualViewport;
+  if (!vv) return;
+
+  altoVisible.value = vv.height;
+  desplazamiento.value = vv.offsetTop;
+  hayTeclado.value = window.innerHeight - vv.height > 120;
+};
 
 let inicioY = 0;
 let scrollAlAbrir = 0;
@@ -58,9 +76,17 @@ watch(
   }
 );
 
+onMounted(() => {
+  medirVentana();
+  window.visualViewport?.addEventListener("resize", medirVentana);
+  window.visualViewport?.addEventListener("scroll", medirVentana);
+});
+
 onBeforeUnmount(() => {
   if (props.abierta) liberarFondo();
   window.removeEventListener("keydown", alTeclado);
+  window.visualViewport?.removeEventListener("resize", medirVentana);
+  window.visualViewport?.removeEventListener("scroll", medirVentana);
 });
 
 /* Arrastrar hacia abajo para cerrar. Solo cuenta si la lista esta arriba del
@@ -97,13 +123,23 @@ const alSoltar = () => {
 <template>
   <Teleport to="body">
     <Transition name="hoja">
-      <div v-if="abierta" class="hoja-fondo" @click.self="emit('cerrar')">
+      <div
+        v-if="abierta"
+        class="hoja-fondo"
+        :style="
+          altoVisible
+            ? { height: `${altoVisible}px`, top: `${desplazamiento}px`, bottom: 'auto' }
+            : {}
+        "
+        @click.self="emit('cerrar')"
+      >
         <div
           ref="panel"
           class="hoja"
           role="dialog"
           aria-modal="true"
           :aria-label="titulo || 'Panel'"
+          :class="{ 'con-teclado': hayTeclado }"
           :style="{
             '--hoja-alto': alto,
             transform: arrastre ? `translateY(${arrastre}px)` : '',
