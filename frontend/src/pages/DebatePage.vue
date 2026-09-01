@@ -292,7 +292,7 @@ const autoGrow = (event) => {
 
       <div v-if="loadingComments" class="spinner" />
 
-      <div v-else-if="comments.length" class="surface surface-pad">
+      <div v-else-if="comments.length" class="surface surface-pad comentarios-caja">
         <CommentItem
           v-for="comment in comments"
           :key="comment.id"
