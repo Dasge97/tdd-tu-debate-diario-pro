@@ -34,23 +34,22 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Las dependencias van en su propia capa para no reinstalarlas en cada cambio de
-# codigo. Sin --no-scripts, los auto-scripts de Symfony intentarian vaciar la
-# cache cuando todavia no existen ni bin/console ni config/.
-COPY backend/composer.json backend/composer.lock backend/symfony.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
-
 COPY backend/ .
 
-RUN composer dump-autoload --no-dev --optimize --no-interaction \
-    && composer run-script --no-dev post-install-cmd || true
+# var/ no esta versionado (lo ignora .gitignore), asi que hay que crearlo antes
+# de instalar: Symfony escribe ahi la cache y los logs.
+RUN mkdir -p var/cache var/log
+
+# Una sola pasada de composer, con el codigo ya copiado.
+# Partirlo en dos capas (instalar dependencias primero y generar el autoloader
+# despues) deja fuera del classmap paquetes como psr/http-factory, y entonces
+# el servidor de websocket no arranca.
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # La web compilada se sirve como ficheros estaticos bajo /app.
 COPY --from=web /build/dist ./public/app
 
-# var/ no esta versionado (lo ignora .gitignore), asi que hay que crearlo:
-# Symfony escribe ahi la cache y los logs.
-RUN mkdir -p var/cache var/log && chown -R www-data:www-data var/ public/
+RUN chown -R www-data:www-data var/ public/
 
 COPY backend/docker/nginx.conf /etc/nginx/nginx.conf
 COPY backend/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

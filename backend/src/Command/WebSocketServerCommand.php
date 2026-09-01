@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Repository\ChatConversationRepository;
 use App\Repository\UserRepository;
 use App\Service\JwtService;
+use GuzzleHttp\Psr7\HttpFactory;
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
 use Ratchet\RFC6455\Messaging\MessageBuffer;
@@ -54,7 +55,7 @@ class WebSocketServerCommand extends Command
         $io->info("Starting WebSocket server on port {$port}");
 
         $loop = Loop::get();
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
 
         $socket = new SocketServer("0.0.0.0:{$port}", [], $loop);
 
