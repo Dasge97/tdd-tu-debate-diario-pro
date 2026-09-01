@@ -27,17 +27,19 @@ const arrastrando = ref(false);
  * maquetado. Sin ajustar nada, la parte de abajo de la hoja queda tapada por
  * el teclado y aparecen huecos. visualViewport dice cuanto espacio queda.
  */
-const altoVisible = ref(null);
-const desplazamiento = ref(0);
+const alturaTeclado = ref(0);
 const hayTeclado = ref(false);
 
 const medirVentana = () => {
   const vv = window.visualViewport;
   if (!vv) return;
 
-  altoVisible.value = vv.height;
-  desplazamiento.value = vv.offsetTop;
-  hayTeclado.value = window.innerHeight - vv.height > 120;
+  // Lo que el teclado tapa por abajo: lo que le falta a la ventana visible
+  // respecto a la de maquetado, descontando lo que se haya desplazado.
+  const tapado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+
+  alturaTeclado.value = tapado;
+  hayTeclado.value = tapado > 120;
 };
 
 /**
@@ -140,11 +142,7 @@ const alSoltar = () => {
       <div
         v-if="abierta"
         class="hoja-fondo"
-        :style="
-          altoVisible
-            ? { height: `${altoVisible}px`, top: `${desplazamiento}px`, bottom: 'auto' }
-            : {}
-        "
+        :style="{ paddingBottom: `${alturaTeclado}px` }"
         @click.self="emit('cerrar')"
       >
         <div
