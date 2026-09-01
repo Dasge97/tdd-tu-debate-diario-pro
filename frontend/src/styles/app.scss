@@ -520,11 +520,24 @@ h4 {
   margin-bottom: 8px;
 }
 
+/* Es un boton, porque abre la ficha del personaje. Sin este reseteo el
+   navegador le pinta su propio fondo, borde y relleno. */
 .debate-author {
   display: flex;
   align-items: center;
   gap: 9px;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.debate-author:active {
+  opacity: 0.6;
 }
 
 .debate-author-name {
