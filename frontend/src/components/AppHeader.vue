@@ -40,14 +40,18 @@ const goBack = () => {
 
 <template>
   <header class="app-header">
-    <button v-if="showBack" class="icon-btn" type="button" aria-label="Volver" @click="goBack">
-      <span class="material-symbols-rounded">arrow_back</span>
-    </button>
+    <!-- Tres zonas de igual peso a los lados, para que la navegacion quede
+         centrada tanto si el titulo es corto como si es largo. -->
+    <div class="header-lado">
+      <button v-if="showBack" class="icon-btn" type="button" aria-label="Volver" @click="goBack">
+        <span class="material-symbols-rounded">arrow_back</span>
+      </button>
 
-    <RouterLink v-if="isHome" class="brand-title" :to="{ name: 'home' }">
-      TuDebateDiario
-    </RouterLink>
-    <h1 v-else class="header-title">{{ title }}</h1>
+      <RouterLink v-if="isHome" class="brand-title" :to="{ name: 'home' }">
+        TuDebateDiario
+      </RouterLink>
+      <h1 v-else class="header-title">{{ title }}</h1>
+    </div>
 
     <nav class="header-nav" aria-label="Secciones">
       <RouterLink
@@ -68,29 +72,29 @@ const goBack = () => {
       </RouterLink>
     </nav>
 
-    <span class="header-spacer" />
+    <div class="header-lado header-lado-derecho">
+      <template v-if="auth.isAuthenticated">
+        <RouterLink
+          class="icon-btn"
+          :to="{ name: 'notifications' }"
+          aria-label="Notificaciones"
+        >
+          <span class="material-symbols-rounded">notifications</span>
+          <span v-if="notifications.unreadCount > 0" class="icon-badge">{{ unread }}</span>
+        </RouterLink>
 
-    <template v-if="auth.isAuthenticated">
+        <RouterLink class="icon-btn" :to="{ name: 'settings' }" aria-label="Ajustes">
+          <span class="material-symbols-rounded">settings</span>
+        </RouterLink>
+      </template>
+
       <RouterLink
-        class="icon-btn"
-        :to="{ name: 'notifications' }"
-        aria-label="Notificaciones"
+        v-else
+        class="btn btn-primary btn-sm"
+        :to="{ name: 'login', query: { destino: route.fullPath } }"
       >
-        <span class="material-symbols-rounded">notifications</span>
-        <span v-if="notifications.unreadCount > 0" class="icon-badge">{{ unread }}</span>
+        Entrar
       </RouterLink>
-
-      <RouterLink class="icon-btn" :to="{ name: 'settings' }" aria-label="Ajustes">
-        <span class="material-symbols-rounded">settings</span>
-      </RouterLink>
-    </template>
-
-    <RouterLink
-      v-else
-      class="btn btn-primary btn-sm"
-      :to="{ name: 'login', query: { destino: route.fullPath } }"
-    >
-      Entrar
-    </RouterLink>
+    </div>
   </header>
 </template>

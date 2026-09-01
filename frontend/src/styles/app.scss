@@ -120,8 +120,18 @@ h4 {
   text-overflow: ellipsis;
 }
 
-.header-spacer {
-  flex: 1 1 auto;
+/* Los dos lados de la cabecera pesan igual, asi la navegacion del centro queda
+   centrada respecto a la ventana tanto en la portada como en un debate. */
+.header-lado {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.header-lado-derecho {
+  justify-content: flex-end;
 }
 
 /* Objetivos tactiles de 44px como minimo en toda la cabecera. */
@@ -1249,9 +1259,9 @@ h4 {
 /* Navegacion en la cabecera; en movil no se ve, alli manda la barra inferior. */
 .header-nav {
   display: none;
+  flex: 0 0 auto;
   align-items: center;
   gap: 4px;
-  margin-left: 18px;
 }
 
 .header-nav-item {
