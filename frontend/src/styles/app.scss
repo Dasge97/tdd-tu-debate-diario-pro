@@ -1524,16 +1524,77 @@ h4 {
 
   /* Tipografia algo mas contenida, para que quepa mas en pantalla. */
   .debate-title {
-    font-size: 1.04rem;
+    font-size: 1rem;
+    line-height: 1.3;
+    margin-bottom: 6px;
   }
 
   .debate-detail .debate-title {
-    font-size: 1.3rem;
+    font-size: 1.24rem;
   }
 
   .debate-context {
-    font-size: 0.9rem;
-    margin-bottom: 12px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 11px;
+  }
+
+  /* La tarjeta entera abre el debate, asi que el boton grande solo quitaba
+     sitio. Se muestra unicamente en pantallas mas anchas. */
+  .debate-card .btn-block {
+    display: none;
+  }
+
+  .debate-card-topbar {
+    margin-bottom: 6px;
+  }
+
+  .debate-author-name {
+    font-size: 0.84rem;
+  }
+
+  .debate-author-tag {
+    font-size: 0.72rem;
+  }
+
+  .position-label {
+    font-size: 0.68rem;
+    margin-bottom: 5px;
+  }
+
+  .debate-segmented-bar {
+    height: 9px;
+  }
+
+  .debate-legend {
+    gap: 6px 14px;
+    margin-top: 7px;
+  }
+
+  .debate-meta-row {
+    margin-top: 9px;
+  }
+
+  .brand-title {
+    font-size: 1rem;
+  }
+
+  .header-title {
+    font-size: 0.98rem;
+  }
+
+  .ticker-item {
+    padding: 10px 12px;
+  }
+
+  .ticker-item-title {
+    font-size: 0.88rem;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .mini-label {
+    font-size: 0.66rem;
   }
 
   .debate-story-paragraph {
