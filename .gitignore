@@ -1,5 +1,9 @@
 # Entornos — NUNCA commitear
-.env
+# Solo el .env de la raiz, que es el de docker-compose con los secretos reales.
+/.env
+# backend/.env es la plantilla de Symfony, con valores de ejemplo. Symfony la
+# necesita en tiempo de ejecucion, asi que va versionada.
+!backend/.env
 backend/.env.local
 backend/.env.local.php
 backend/.env.*.local

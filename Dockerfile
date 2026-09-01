@@ -48,7 +48,9 @@ RUN composer dump-autoload --no-dev --optimize --no-interaction \
 # La web compilada se sirve como ficheros estaticos bajo /app.
 COPY --from=web /build/dist ./public/app
 
-RUN chown -R www-data:www-data var/ public/
+# var/ no esta versionado (lo ignora .gitignore), asi que hay que crearlo:
+# Symfony escribe ahi la cache y los logs.
+RUN mkdir -p var/cache var/log && chown -R www-data:www-data var/ public/
 
 COPY backend/docker/nginx.conf /etc/nginx/nginx.conf
 COPY backend/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

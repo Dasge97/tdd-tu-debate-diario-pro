@@ -1,0 +1,87 @@
+# Despliegue en el servidor codehive.
+#
+# No se levanta con este fichero a solas: el servidor añade un segundo fichero,
+# docker-compose.override.generated.yml, con los puertos publicados y los
+# secretos reales. El comando canónico está en README_DEPLOY.md.
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+      MYSQL_DATABASE: tdd_app
+      MYSQL_USER: tdd_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-tdd_pass}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # API Symfony, landing, panel de administración y la web instalable de /app.
+  # El Dockerfile de la raíz compila frontend/ y copia el resultado a public/app.
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "mysql://tdd_user:${MYSQL_PASSWORD:-tdd_pass}@db:3306/tdd_app?serverVersion=8.0.32&charset=utf8mb4"
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-changeme_jwt}
+      WORKER_API_KEY: ${WORKER_API_KEY:-changeme_worker}
+      CORS_ALLOW_ORIGIN: '${CORS_ALLOW_ORIGIN:-^https?://([a-z0-9-]+\.)?tudebatediario\.com$}'
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/var/www/html/public/uploads
+
+  # Servidor de websocket del chat. Usa la misma imagen que backend.
+  backend-ws:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "mysql://tdd_user:${MYSQL_PASSWORD:-tdd_pass}@db:3306/tdd_app?serverVersion=8.0.32&charset=utf8mb4"
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-changeme_jwt}
+      WS_PORT: 8080
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["php", "bin/console", "app:websocket-server"]
+
+  # Worker editorial: genera los debates de cada día.
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: tdd_app
+      DB_USER: tdd_user
+      DB_PASSWORD: ${MYSQL_PASSWORD:-tdd_pass}
+      BACKEND_API_BASE_URL: http://backend:3000
+      WORKER_API_KEY: ${WORKER_API_KEY:-changeme_worker}
+      OPENCODE_PROVIDER_ID: openai
+      OPENCODE_API_KEY: ${OPENAI_API_KEY:-}
+      OPENCODE_MODEL_ID: gpt-4o
+      LOG_LEVEL: info
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+volumes:
+  db_data:
+  uploads:
