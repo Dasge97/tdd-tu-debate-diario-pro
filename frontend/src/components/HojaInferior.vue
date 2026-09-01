@@ -36,7 +36,9 @@ const medirVentana = () => {
 
   // Lo que el teclado tapa por abajo: lo que le falta a la ventana visible
   // respecto a la de maquetado, descontando lo que se haya desplazado.
-  const tapado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  // Se redondea hacia arriba: una fraccion de pixel de menos deja una linea
+  // del teclado asomando por debajo de la hoja.
+  const tapado = Math.max(0, Math.ceil(window.innerHeight - vv.height - vv.offsetTop));
 
   alturaTeclado.value = tapado;
   hayTeclado.value = tapado > 120;
