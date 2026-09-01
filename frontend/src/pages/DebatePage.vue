@@ -4,6 +4,7 @@ import PositionBar from "@/components/PositionBar.vue";
 import CommentItem from "@/components/CommentItem.vue";
 import UserAvatar from "@/components/UserAvatar.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import Lateral from "@/components/Lateral.vue";
 import { useDebatesStore } from "@/stores/debates";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useUiStore } from "@/stores/ui";
@@ -166,7 +167,8 @@ const autoGrow = (event) => {
 </script>
 
 <template>
-  <section class="has-composer">
+  <section class="con-lateral has-composer">
+    <div>
     <div v-if="loading && !debate" class="skeleton" style="height: 320px" />
 
     <p v-else-if="loadError" class="form-error">{{ loadError }}</p>
@@ -331,5 +333,8 @@ const autoGrow = (event) => {
         </button>
       </div>
     </template>
+    </div>
+
+    <Lateral :excluir-id="debateId" />
   </section>
 </template>

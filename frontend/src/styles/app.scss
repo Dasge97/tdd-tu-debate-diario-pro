@@ -1244,21 +1244,159 @@ h4 {
   opacity: 0;
 }
 
-/* ---------- Pantallas anchas: una columna centrada, no un escritorio ---------- */
+/* ---------- Escritorio ---------- */
 
-@media (min-width: 900px) {
-  .app-main {
-    max-width: 720px;
-    padding-bottom: 40px;
+/* Navegacion en la cabecera; en movil no se ve, alli manda la barra inferior. */
+.header-nav {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: 18px;
+}
+
+.header-nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: #5c6674;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.header-nav-item:hover {
+  background: rgba(31, 75, 163, 0.07);
+  color: var(--tdd-primary);
+}
+
+.header-nav-item.is-active {
+  color: var(--tdd-primary);
+  background: rgba(31, 75, 163, 0.1);
+}
+
+.header-nav-item .material-symbols-rounded {
+  font-size: 21px;
+}
+
+/* Dos columnas: el contenido a la izquierda y la barra lateral a la derecha.
+   En movil la barra lateral no se pinta. */
+.con-lateral {
+  display: block;
+}
+
+.lateral {
+  display: none;
+}
+
+.lateral-bloque + .lateral-bloque {
+  margin-top: 16px;
+}
+
+.lateral-titulo {
+  margin: 0 0 10px;
+  font-family: "Bitter", Georgia, serif;
+  font-size: 1rem;
+}
+
+.lateral-item {
+  display: block;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(217, 211, 200, 0.6);
+  color: inherit;
+}
+
+.lateral-item:last-child {
+  border-bottom: 0;
+}
+
+.lateral-item-marca {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tdd-muted);
+}
+
+.lateral-item-titulo {
+  margin-top: 3px;
+  font-family: "Bitter", Georgia, serif;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
+.lateral-item:hover .lateral-item-titulo {
+  color: var(--tdd-primary);
+}
+
+@media (min-width: 1000px) {
+  :root {
+    --tdd-header-h: 64px;
   }
 
+  /* Lo que en escritorio se muestra de otra forma en la columna lateral. */
+  .solo-movil {
+    display: none;
+  }
+
+  /* Sin barra inferior: la navegacion pasa a la cabecera. */
+  .tabbar {
+    display: none;
+  }
+
+  .header-nav {
+    display: flex;
+  }
+
+  .app-header {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .app-main {
+    max-width: 1180px;
+    padding: 22px 22px 60px;
+  }
+
+  .con-lateral {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .lateral {
+    display: block;
+    position: sticky;
+    top: calc(var(--tdd-header-h) + 22px);
+  }
+
+  /* El redactor de comentarios se alinea con la columna de contenido, no con
+     toda la ventana, y ya no tiene que dejar hueco para la barra inferior. */
   .composer,
   .composer-reply-hint {
-    max-width: 720px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(100%, 1136px);
+    max-width: 1136px;
+    padding-right: 366px;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+    border: 1px solid var(--tdd-line);
+    border-bottom: 0;
   }
 
-  /* En escritorio el aviso de instalacion se recoge a la esquina inferior
-     derecha, en vez de ocupar todo el ancho de la ventana. */
+  .composer-reply-hint {
+    bottom: 67px;
+  }
+
+  .has-composer {
+    padding-bottom: 90px;
+  }
+
   .install-prompt {
     left: auto;
     right: 20px;
@@ -1267,11 +1405,36 @@ h4 {
     border-radius: 16px;
   }
 
+  .toast-host {
+    left: auto;
+    right: 20px;
+    bottom: 20px;
+    width: 380px;
+  }
+}
+
+/* Franja intermedia: sin barra lateral, pero con mas aire que en movil. */
+@media (min-width: 700px) and (max-width: 999px) {
+  .app-main {
+    max-width: 760px;
+  }
+
+  .composer,
+  .composer-reply-hint {
+    max-width: 760px;
+  }
+
+  .install-prompt {
+    left: auto;
+    right: 20px;
+    width: 380px;
+  }
+
   .tabbar {
     left: 50%;
     right: auto;
     width: 100%;
-    max-width: 720px;
+    max-width: 760px;
     transform: translateX(-50%);
     border-radius: 20px 20px 0 0;
     border-left: 1px solid var(--tdd-line);

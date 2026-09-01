@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import DebateCard from "@/components/DebateCard.vue";
 import DebateSkeleton from "@/components/DebateSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import Lateral from "@/components/Lateral.vue";
 import UserAvatar from "@/components/UserAvatar.vue";
 import { useDebatesStore } from "@/stores/debates";
 import { useUsersStore } from "@/stores/users";
@@ -46,9 +47,10 @@ const openDebate = (id) => router.push({ name: "debate", params: { id } });
 </script>
 
 <template>
-  <section>
+  <section class="con-lateral">
+    <div>
     <!-- Cinta de titulares: los debates con más participación, deslizables. -->
-    <div v-if="debates.ticker.length" class="ticker" aria-label="Debates destacados">
+      <div v-if="debates.ticker.length" class="ticker solo-movil" aria-label="Debates destacados">
       <button
         v-for="item in debates.ticker.slice(0, 10)"
         :key="item.id"
@@ -153,6 +155,9 @@ const openDebate = (id) => router.push({ name: "debate", params: { id } });
         title="Ranking vacío"
         text="Cuando la comunidad empiece a comentar, aquí aparecerán los protagonistas."
       />
+      </div>
     </div>
+
+    <Lateral />
   </section>
 </template>
