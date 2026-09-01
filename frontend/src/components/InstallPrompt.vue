@@ -62,12 +62,12 @@ onBeforeUnmount(() => {
     </span>
 
     <div class="install-prompt-texto">
-      <div class="install-prompt-titulo">Instala TuDebateDiario</div>
+      <div class="install-prompt-titulo">Instala la app</div>
       <div class="install-prompt-detalle">
         <template v-if="esIos">
           Pulsa <strong>Compartir</strong> y luego «Añadir a pantalla de inicio».
         </template>
-        <template v-else>Se abre a pantalla completa, como una app.</template>
+        <template v-else>Se abre a pantalla completa, con su icono.</template>
       </div>
     </div>
 
