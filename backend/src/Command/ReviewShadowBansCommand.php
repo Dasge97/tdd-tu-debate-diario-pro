@@ -13,7 +13,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:review-shadow-bans',
-    description: 'Revisa y actualiza shadow bans automáticamente'
+    description: 'Levanta la ocultacion de las cuentas que han vuelto a aportar bien'
 )]
 class ReviewShadowBansCommand extends Command
 {
@@ -26,13 +26,13 @@ class ReviewShadowBansCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Shadow Ban Review');
+        $io->title('Revision de cuentas ocultas');
 
         try {
-            $this->shadowBanService->reviewBanned();
-            $io->success('Shadow ban review completed successfully.');
+            $levantados = $this->shadowBanService->reviewBanned();
+            $io->success("Revision terminada. Cuentas que vuelven a verse: {$levantados}.");
         } catch (\Exception $e) {
-            $io->error('Error during shadow ban review: ' . $e->getMessage());
+            $io->error('Error durante la revision: ' . $e->getMessage());
             return Command::FAILURE;
         }
 

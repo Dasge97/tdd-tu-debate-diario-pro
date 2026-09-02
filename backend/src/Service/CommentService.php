@@ -13,6 +13,9 @@ use App\Repository\VoteRepository;
 
 class CommentService
 {
+    /** Votos del mismo signo que hacen falta para mover un punto de fiabilidad. */
+    public const VOTOS_POR_PUNTO = 3;
+
     public function __construct(
         private readonly CommentRepository $commentRepository,
         private readonly DebateRepository $debateRepository,
@@ -68,10 +71,13 @@ class CommentService
         return $comment;
     }
 
+    /**
+     * Vota un comentario. El valor 0 retira el voto que hubiera.
+     */
     public function voteComment(User $voter, int $commentId, int $value): void
     {
-        if (!in_array($value, [1, -1], true)) {
-            throw new \InvalidArgumentException('value must be 1 or -1');
+        if (!in_array($value, [1, 0, -1], true)) {
+            throw new \InvalidArgumentException('value must be 1, 0 or -1');
         }
 
         $comment = $this->commentRepository->find($commentId);
@@ -83,19 +89,35 @@ class CommentService
             throw new \RuntimeException('FORBIDDEN: cannot vote on own comment');
         }
 
-        // Upsert the vote
-        $this->voteRepository->upsert($voter->getId(), $commentId, $value);
+        if ($value === 0) {
+            $this->voteRepository->delete($voter->getId(), $commentId);
+        } else {
+            $this->voteRepository->upsert($voter->getId(), $commentId, $value);
+        }
 
-        // Recalculate comment score
         $this->recalculateScore($comment);
 
-        // Update author's reliability score
         $author = $comment->getUser();
-        $author->setReliabilityScore($author->getReliabilityScore() + $value);
-        $this->userRepository->save($author);
+        $this->recalcularFiabilidad($author);
 
-        // Evaluate shadow ban
         $this->shadowBanService->evaluate($author);
+    }
+
+    /**
+     * Recalcula la fiabilidad del autor a partir de todos los votos que han
+     * recibido sus comentarios.
+     *
+     * Hacen falta VOTOS_POR_PUNTO votos del mismo signo para mover un punto, de
+     * modo que la fiabilidad refleje un comportamiento sostenido y no una mala
+     * tarde. Se recalcula entero en lugar de ir sumando: asi, retirar o cambiar
+     * un voto corrige la cuenta, y no quedan restos de votos ya deshechos.
+     */
+    public function recalcularFiabilidad(User $autor): void
+    {
+        $suma = $this->voteRepository->sumaRecibidaPor($autor->getId());
+
+        $autor->setReliabilityScore(intdiv($suma, self::VOTOS_POR_PUNTO));
+        $this->userRepository->save($autor);
     }
 
     private function recalculateScore(Comment $comment): void

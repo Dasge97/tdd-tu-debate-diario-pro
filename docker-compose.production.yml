@@ -58,6 +58,31 @@ services:
         condition: service_healthy
     command: ["php", "bin/console", "app:websocket-server"]
 
+  # Revisa cada seis horas si alguna cuenta oculta ha vuelto a aportar bien, y
+  # en ese caso deja que sus comentarios se vuelvan a ver. Sin esto, una cuenta
+  # que cae se queda oculta para siempre.
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "mysql://tdd_user:${MYSQL_PASSWORD:-tdd_pass}@db:3306/tdd_app?serverVersion=8.0.32&charset=utf8mb4"
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-changeme_jwt}
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          php bin/console app:review-shadow-bans --no-interaction || true
+          sleep 21600
+        done
+
   # Worker editorial: genera los debates de cada día.
   worker:
     build:

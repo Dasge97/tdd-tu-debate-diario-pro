@@ -55,6 +55,37 @@ class VoteRepository extends ServiceEntityRepository
         return $resumen;
     }
 
+    /**
+     * Suma de los votos que han recibido los comentarios de un usuario.
+     *
+     * Con $dias se cuentan solo los votos de ese periodo, que es lo que hace
+     * falta para juzgar como se esta portando alguien ahora y no hace un ano.
+     */
+    public function sumaRecibidaPor(int $userId, ?int $dias = null): int
+    {
+        $sql = 'SELECT COALESCE(SUM(v.value), 0)
+                  FROM votes v
+                  JOIN comments c ON c.id = v.comment_id
+                 WHERE c.user_id = :userId';
+
+        $parametros = ['userId' => $userId];
+
+        if ($dias !== null) {
+            $sql .= ' AND v.created_at >= :desde';
+            $parametros['desde'] = (new \DateTime("-{$dias} days"))->format('Y-m-d H:i:s');
+        }
+
+        return (int) $this->getEntityManager()->getConnection()->fetchOne($sql, $parametros);
+    }
+
+    public function delete(int $userId, int $commentId): void
+    {
+        $this->getEntityManager()->getConnection()->executeStatement(
+            'DELETE FROM votes WHERE user_id = :userId AND comment_id = :commentId',
+            ['userId' => $userId, 'commentId' => $commentId]
+        );
+    }
+
     public function upsert(int $userId, int $commentId, int $value): void
     {
         $em = $this->getEntityManager();
