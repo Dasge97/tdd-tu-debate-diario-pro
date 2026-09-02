@@ -2191,18 +2191,6 @@ h4 {
   overflow: hidden;
 }
 
-.rotulo-marca {
-  flex: 0 0 auto;
-  padding-right: 10px;
-  border-right: 1px solid var(--tdd-line);
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--tdd-primary);
-  white-space: nowrap;
-}
-
 .rotulo-ventana {
   flex: 1 1 auto;
   min-width: 0;

@@ -26,8 +26,6 @@ onMounted(() => {
 
 <template>
   <div v-if="items.length" class="rotulo" aria-label="Lo más debatido">
-    <span class="rotulo-marca">Lo más debatido</span>
-
     <div class="rotulo-ventana">
       <!-- La lista va dos veces seguidas: al llegar a la mitad, la animacion
            vuelve al principio y el paso se ve continuo. -->
