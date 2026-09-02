@@ -2168,24 +2168,6 @@ h4 {
   background: rgba(217, 211, 200, 0.8);
 }
 
-/* Aviso de que el feed esta filtrado por un personaje. */
-.filtro-activo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--tdd-line);
-  border-radius: 14px;
-  background: rgba(31, 75, 163, 0.06);
-  font-size: 0.88rem;
-}
-
-.filtro-activo-texto {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
 @media (min-width: 1000px) {
   .personajes-fila {
     margin: 0 0 16px;

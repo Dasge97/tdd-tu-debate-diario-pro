@@ -77,18 +77,6 @@ const { centinela, cargando: cargandoMas, seAcabo } = useCargaContinua(() =>
     <div>
       <FilaPersonajes :activo="personaFiltro" @filtrar="filtrar" />
 
-      <div v-if="personaFiltro" class="filtro-activo">
-        <span class="material-symbols-rounded" style="color: var(--tdd-primary)">
-          filter_alt
-        </span>
-        <span class="filtro-activo-texto">
-          Viendo solo los debates de <strong>{{ personaFiltro }}</strong>
-        </span>
-        <button type="button" class="btn btn-ghost btn-sm" @click="filtrar(null)">
-          Quitar
-        </button>
-      </div>
-
       <p v-if="debates.error" class="form-error">{{ debates.error }}</p>
 
       <DebateSkeleton v-if="debates.cargandoFeed && !debates.feed.length" />
