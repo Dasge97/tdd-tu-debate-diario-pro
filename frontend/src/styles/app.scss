@@ -2161,6 +2161,11 @@ h4 {
   text-transform: uppercase;
 }
 
+/* Cuando debajo va el rotulo, se juntan: forman un solo bloque. */
+.dia-separador.pegado-al-rotulo {
+  margin-bottom: 6px;
+}
+
 /* Una linea a cada lado deja la fecha centrada. */
 .dia-separador::before,
 .dia-separador::after {
@@ -2183,8 +2188,8 @@ h4 {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 -12px 14px;
-  padding: 7px 12px;
+  margin: 0 -12px 8px;
+  padding: 6px 12px;
   border-top: 1px solid rgba(217, 211, 200, 0.7);
   border-bottom: 1px solid rgba(217, 211, 200, 0.7);
   background: rgba(255, 253, 249, 0.7);
@@ -2269,7 +2274,7 @@ h4 {
 
 @media (min-width: 1000px) {
   .rotulo {
-    margin: 0 0 16px;
+    margin: 0 0 10px;
     border-radius: 12px;
     border: 1px solid rgba(217, 211, 200, 0.7);
   }

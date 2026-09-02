@@ -83,7 +83,12 @@ const { centinela, cargando: cargandoMas, seAcabo } = useCargaContinua(() =>
       <DebateSkeleton v-if="debates.cargandoFeed && !debates.feed.length" />
 
       <template v-for="(grupo, indice) in grupos" :key="grupo.dia">
-        <div class="dia-separador">{{ etiquetaDia(grupo.dia) }}</div>
+        <div
+          class="dia-separador"
+          :class="{ 'pegado-al-rotulo': indice === 0 && !personaFiltro }"
+        >
+          {{ etiquetaDia(grupo.dia) }}
+        </div>
 
         <!-- Solo bajo la primera fecha: es un resumen, no un adorno repetido. -->
         <RotuloCalientes v-if="indice === 0 && !personaFiltro" />
