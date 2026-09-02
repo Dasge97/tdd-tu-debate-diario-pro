@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\Comment;
 use App\Entity\Position;
 use App\Entity\User;
+use App\Repository\VoteRepository;
 use App\Service\CommentService;
 use App\Service\PositionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,7 +20,8 @@ class ParticipationController extends AbstractController
 {
     public function __construct(
         private readonly PositionService $positionService,
-        private readonly CommentService $commentService
+        private readonly CommentService $commentService,
+        private readonly VoteRepository $voteRepository
     ) {
     }
 
@@ -64,11 +66,17 @@ class ParticipationController extends AbstractController
         /** @var User|null $user */
         $user = $request->attributes->get('currentUser');
 
+        // Positivos, negativos y el voto propio de todos los comentarios del
+        // debate, en una sola consulta.
+        $votos = $this->voteRepository->resumenPorDebate($id, $user?->getId());
+
         // When a specific parent is requested, return a flat list of its direct replies
         if ($request->query->has('parentId')) {
             $parentId = (int) $request->query->get('parentId');
             $comments = $this->commentService->getComments($id, $parentId, $user);
-            return new JsonResponse(array_map(fn(Comment $c) => $this->normalizeComment($c), $comments));
+            return new JsonResponse(
+                array_map(fn(Comment $c) => $this->normalizeComment($c, [], $votos), $comments)
+            );
         }
 
         // Otherwise, return top-level comments with their replies nested (one level deep)
@@ -87,8 +95,11 @@ class ParticipationController extends AbstractController
         $result = [];
         foreach ($topLevel as $tl) {
             $replies = $byParent[$tl->getId()] ?? [];
-            $normalizedReplies = array_map(fn(Comment $r) => $this->normalizeComment($r), $replies);
-            $result[] = $this->normalizeComment($tl, $normalizedReplies);
+            $normalizedReplies = array_map(
+                fn(Comment $r) => $this->normalizeComment($r, [], $votos),
+                $replies
+            );
+            $result[] = $this->normalizeComment($tl, $normalizedReplies, $votos);
         }
 
         return new JsonResponse($result);
@@ -109,13 +120,21 @@ class ParticipationController extends AbstractController
 
     /**
      * @param array<int, array> $replies Already-normalized replies (optional)
+     * @param array<int, array{positivos: int, negativos: int, miVoto: int}> $votos
      */
-    private function normalizeComment(Comment $comment, array $replies = []): array
+    private function normalizeComment(Comment $comment, array $replies = [], array $votos = []): array
     {
+        $suyos = $votos[$comment->getId()] ?? ['positivos' => 0, 'negativos' => 0, 'miVoto' => 0];
+
         return [
             'id'        => $comment->getId(),
             'content'   => $comment->getContent(),
             'score'     => $comment->getScore(),
+            // Positivos y negativos por separado, no solo la resta.
+            'upvotes'   => $suyos['positivos'],
+            'downvotes' => $suyos['negativos'],
+            // 1, -1 o 0 segun lo que haya votado quien mira.
+            'myVote'    => $suyos['miVoto'],
             'createdAt' => $comment->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'parentId'  => $comment->getParent()?->getId(),
             'debateId'  => $comment->getDebate()->getId(),

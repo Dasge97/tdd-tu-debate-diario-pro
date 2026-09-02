@@ -818,20 +818,41 @@ h4 {
   background: rgba(31, 75, 163, 0.1);
 }
 
-.comment-vote.is-up {
+/* Flechas de voto: verde arriba, roja abajo, cada una con su cuenta. */
+.voto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.voto .material-symbols-rounded {
+  font-size: 19px;
+}
+
+.voto-arriba:active,
+.voto-arriba.is-activo {
   color: #17663c;
+  background: rgba(46, 204, 113, 0.14);
 }
 
-.comment-vote.is-down {
+.voto-abajo:active,
+.voto-abajo.is-activo {
   color: #a5281a;
+  background: rgba(231, 76, 60, 0.12);
 }
 
-.comment-score {
-  min-width: 22px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 0.86rem;
-  color: #3f4753;
+.voto.is-activo .material-symbols-rounded {
+  font-variation-settings: "wght" 600;
 }
 
 .comment-replies {

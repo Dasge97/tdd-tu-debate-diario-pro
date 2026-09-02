@@ -17,55 +17,42 @@ const emit = defineEmits(["reply"]);
 const ui = useUiStore();
 const { exigeSesion } = useSesion();
 
-/**
- * El voto propio no viaja en la respuesta de la API, asi que se recuerda en el
- * navegador para que el boton siga marcado al volver al debate.
- */
-const VOTES_KEY = "tdd.commentVotes";
+/* Positivos y negativos van por separado, y el voto propio lo dice la API. */
+const positivos = ref(Number(props.comment.upvotes || 0));
+const negativos = ref(Number(props.comment.downvotes || 0));
+const miVoto = ref(Number(props.comment.myVote || 0));
+const enviando = ref(false);
 
-const readVotes = () => {
-  try {
-    return JSON.parse(localStorage.getItem(VOTES_KEY) || "{}");
-  } catch (_) {
-    return {};
-  }
-};
+const autor = computed(() => props.comment.user || {});
+const respuestas = computed(() => props.comment.replies || []);
 
-const myVote = ref(readVotes()[props.comment.id] ?? 0);
-const score = ref(Number(props.comment.score || 0));
-const sending = ref(false);
-
-const author = computed(() => props.comment.user || {});
-const replies = computed(() => props.comment.replies || []);
-
-const vote = async (value) => {
+const votar = async (valor) => {
   if (!exigeSesion("votar comentarios")) return;
-  if (sending.value) return;
+  if (enviando.value) return;
 
-  const next = myVote.value === value ? 0 : value;
-  const previous = myVote.value;
+  const anterior = miVoto.value;
+  // Volver a pulsar la misma flecha retira el voto.
+  const nuevo = anterior === valor ? 0 : valor;
 
-  sending.value = true;
+  enviando.value = true;
   try {
-    await participationService.voteComment(props.comment.id, next);
-    score.value += next - previous;
-    myVote.value = next;
+    await participationService.voteComment(props.comment.id, nuevo);
 
-    const votes = readVotes();
-    if (next === 0) {
-      delete votes[props.comment.id];
-    } else {
-      votes[props.comment.id] = next;
-    }
-    localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
+    // Se quita el voto anterior y se suma el nuevo, sin recargar la lista.
+    if (anterior === 1) positivos.value -= 1;
+    if (anterior === -1) negativos.value -= 1;
+    if (nuevo === 1) positivos.value += 1;
+    if (nuevo === -1) negativos.value += 1;
+
+    miVoto.value = nuevo;
   } catch (error) {
     ui.error(errorMessage(error, "No hemos podido registrar tu voto."));
   } finally {
-    sending.value = false;
+    enviando.value = false;
   }
 };
 
-const report = async () => {
+const reportar = async () => {
   if (!exigeSesion("reportar")) return;
 
   try {
@@ -79,21 +66,21 @@ const report = async () => {
 
 <template>
   <div class="comment">
-    <UserAvatar :user="author" size="sm" />
+    <UserAvatar :user="autor" size="sm" />
 
     <div class="comment-body">
       <div class="comment-head">
         <RouterLink
           class="comment-author"
           :to="
-            author.isAiPersona
-              ? { name: 'persona', params: { username: author.username } }
-              : { name: 'user', params: { username: author.username } }
+            autor.isAiPersona
+              ? { name: 'persona', params: { username: autor.username } }
+              : { name: 'user', params: { username: autor.username } }
           "
         >
-          {{ author.username }}
+          {{ autor.username }}
         </RouterLink>
-        <span v-if="author.isAiPersona" class="ia-chip">IA</span>
+        <span v-if="autor.isAiPersona" class="ia-chip">IA</span>
         <span class="comment-time">{{ formatRelative(comment.createdAt) }}</span>
       </div>
 
@@ -102,24 +89,24 @@ const report = async () => {
       <div class="comment-actions">
         <button
           type="button"
-          class="comment-vote"
-          :class="{ 'is-up': myVote === 1 }"
+          class="voto voto-arriba"
+          :class="{ 'is-activo': miVoto === 1 }"
           aria-label="Votar a favor"
-          @click="vote(1)"
+          @click="votar(1)"
         >
-          <span class="material-symbols-rounded" style="font-size: 19px">thumb_up</span>
+          <span class="material-symbols-rounded">arrow_upward</span>
+          {{ positivos }}
         </button>
-
-        <span class="comment-score">{{ score }}</span>
 
         <button
           type="button"
-          class="comment-vote"
-          :class="{ 'is-down': myVote === -1 }"
+          class="voto voto-abajo"
+          :class="{ 'is-activo': miVoto === -1 }"
           aria-label="Votar en contra"
-          @click="vote(-1)"
+          @click="votar(-1)"
         >
-          <span class="material-symbols-rounded" style="font-size: 19px">thumb_down</span>
+          <span class="material-symbols-rounded">arrow_downward</span>
+          {{ negativos }}
         </button>
 
         <button
@@ -131,16 +118,16 @@ const report = async () => {
           Responder
         </button>
 
-        <button type="button" class="comment-vote" aria-label="Reportar" @click="report">
+        <button type="button" class="comment-vote" aria-label="Reportar" @click="reportar">
           <span class="material-symbols-rounded" style="font-size: 18px">flag</span>
         </button>
       </div>
 
-      <div v-if="replies.length" class="comment-replies">
+      <div v-if="respuestas.length" class="comment-replies">
         <CommentItem
-          v-for="reply in replies"
-          :key="reply.id"
-          :comment="reply"
+          v-for="respuesta in respuestas"
+          :key="respuesta.id"
+          :comment="respuesta"
           :depth="depth + 1"
         />
       </div>
