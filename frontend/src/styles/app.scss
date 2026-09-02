@@ -2053,3 +2053,142 @@ h4 {
     animation: none;
   }
 }
+
+/* ---------- Fila de personajes ---------- */
+
+.personajes-fila {
+  display: flex;
+  gap: 14px;
+  margin: 0 -12px 6px;
+  padding: 2px 12px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(217, 211, 200, 0.7);
+}
+
+.personajes-fila::-webkit-scrollbar {
+  display: none;
+}
+
+.personaje-burbuja {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 66px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Anillo fino alrededor del avatar. Se pinta en el azul de marca cuando el
+   personaje esta elegido, y en el tono del papel cuando no. */
+.personaje-anillo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 1.5px solid var(--tdd-line);
+  background: var(--tdd-surface);
+  transition: border-color 0.18s ease, transform 0.14s ease, box-shadow 0.18s ease;
+}
+
+.personaje-anillo .avatar {
+  width: 52px;
+  height: 52px;
+  font-size: 1.1rem;
+}
+
+.personaje-burbuja:active .personaje-anillo {
+  transform: scale(0.94);
+}
+
+.personaje-burbuja.is-activa .personaje-anillo {
+  border-color: var(--tdd-primary);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(31, 75, 163, 0.12);
+}
+
+.personaje-todos {
+  font-size: 24px;
+  color: var(--tdd-muted);
+}
+
+.personaje-burbuja.is-activa .personaje-todos {
+  color: var(--tdd-primary);
+}
+
+.personaje-nombre {
+  max-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #5c6674;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.personaje-burbuja.is-activa .personaje-nombre {
+  color: var(--tdd-primary);
+}
+
+.personajes-cargando {
+  display: flex;
+  gap: 14px;
+}
+
+.personaje-hueco {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+}
+
+/* ---------- Separador de dia dentro del feed ---------- */
+
+.dia-separador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 12px;
+  color: var(--tdd-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dia-separador::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(217, 211, 200, 0.8);
+}
+
+/* Aviso de que el feed esta filtrado por un personaje. */
+.filtro-activo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--tdd-line);
+  border-radius: 14px;
+  background: rgba(31, 75, 163, 0.06);
+  font-size: 0.88rem;
+}
+
+.filtro-activo-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (min-width: 1000px) {
+  .personajes-fila {
+    margin: 0 0 16px;
+    padding: 2px 0 14px;
+  }
+}

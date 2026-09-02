@@ -11,17 +11,16 @@ import { errorMessage } from "@/api/client";
  */
 export const useDebatesStore = defineStore("debates", {
   state: () => ({
-    today: [],
-    // true cuando en today no hay debates de hoy y se muestran los ultimos.
-    todayEsReciente: false,
-    // Pagina ya pedida en la carga continua de la pestana Hoy.
-    paginaHoy: 1,
-    topWeek: [],
+    // Feed unico de la pantalla de inicio.
+    feed: [],
+    // Personaje por el que se filtra, o null para verlos todos.
+    personaFiltro: null,
+    // Ultima pagina pedida en la carga continua.
+    paginaFeed: 1,
+    cargandoFeed: false,
     ticker: [],
     byId: {},
     positions: {},
-    loadingToday: false,
-    loadingWeek: false,
     error: null
   }),
 
@@ -56,78 +55,61 @@ export const useDebatesStore = defineStore("debates", {
       });
     },
 
-    async fetchToday(force = false) {
-      if (this.today.length && !force) return this.today;
-      this.loadingToday = true;
+    /**
+     * Carga el feed de la pantalla de inicio.
+     *
+     * Sin filtro se piden los debates recientes, que vienen del mas nuevo al
+     * mas viejo. Con filtro se piden solo los de ese personaje.
+     */
+    async cargarFeed({ persona = null, forzar = false } = {}) {
+      const cambiaFiltro = persona !== this.personaFiltro;
+
+      if (this.feed.length && !forzar && !cambiaFiltro) return this.feed;
+
+      this.cargandoFeed = true;
       this.error = null;
+      this.personaFiltro = persona;
+
       try {
-        let data = await debatesService.today();
+        const data = persona
+          ? await debatesService.recent(1, persona)
+          : await debatesService.recent(1);
 
-        // Algunos dias el worker todavia no ha publicado. En vez de dejar la
-        // pantalla vacia, se muestran los ultimos debates que haya.
-        if (!data.length) {
-          data = await debatesService.recent();
-          this.todayEsReciente = data.length > 0;
-        } else {
-          this.todayEsReciente = false;
-        }
-
-        this.paginaHoy = 1;
-
-        this.today = data;
+        this.paginaFeed = 1;
+        this.feed = data;
         this.cache(data);
         this.loadPositionsFor(data);
         return data;
       } catch (error) {
-        this.error = errorMessage(error, "No hemos podido cargar los debates de hoy.");
+        this.error = errorMessage(error, "No hemos podido cargar los debates.");
+        this.feed = [];
         return [];
       } finally {
-        this.loadingToday = false;
-      }
-    },
-
-    async fetchTopWeek(force = false) {
-      if (this.topWeek.length && !force) return this.topWeek;
-      this.loadingWeek = true;
-      try {
-        const data = await debatesService.topWeek();
-        this.topWeek = data;
-        this.cache(data);
-        this.loadPositionsFor(data);
-        return data;
-      } catch (error) {
-        this.error = errorMessage(error, "No hemos podido cargar los debates de la semana.");
-        return [];
-      } finally {
-        this.loadingWeek = false;
+        this.cargandoFeed = false;
       }
     },
 
     /**
-     * Trae la pagina siguiente de la pestana Hoy y devuelve cuantos debates ha
-     * anadido. Solo tiene sentido cuando se estan mostrando los ultimos
-     * debates: la lista de hoy no se pagina.
+     * Trae la pagina siguiente del feed y devuelve cuantos debates ha anadido.
+     * Devuelve null mientras la primera carga sigue en marcha, para que la
+     * carga continua no de la lista por agotada antes de tiempo.
      */
-    async cargarMasHoy() {
-      // Todavia no se sabe: la primera carga sigue en marcha.
-      if (this.loadingToday || !this.today.length) return null;
+    async cargarMasFeed() {
+      if (this.cargandoFeed || !this.feed.length) return null;
 
-      // La lista de hoy no se pagina; solo la de los ultimos debates.
-      if (!this.todayEsReciente) return 0;
+      const siguiente = this.paginaFeed + 1;
+      const data = await debatesService.recent(siguiente, this.personaFiltro);
 
-      const siguiente = this.paginaHoy + 1;
-      const data = await debatesService.recent(siguiente);
-
-      const conocidos = new Set(this.today.map((d) => d.id));
+      const conocidos = new Set(this.feed.map((d) => d.id));
       const nuevos = data.filter((d) => !conocidos.has(d.id));
 
       if (nuevos.length) {
-        this.today = [...this.today, ...nuevos];
+        this.feed = [...this.feed, ...nuevos];
         this.cache(nuevos);
         this.loadPositionsFor(nuevos);
       }
 
-      this.paginaHoy = siguiente;
+      this.paginaFeed = siguiente;
       return nuevos.length;
     },
 

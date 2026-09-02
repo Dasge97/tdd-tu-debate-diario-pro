@@ -64,3 +64,35 @@ export const toParagraphs = (text) =>
 /** "1 voto" / "3 votos": evita el clásico "1 votos". */
 export const plural = (count, singular, pluralForm) =>
   `${count} ${Number(count) === 1 ? singular : pluralForm}`;
+
+/**
+ * Etiqueta del separador de dia dentro del feed: "Hoy", "Ayer" o la fecha.
+ * Recibe la fecha en formato aaaa-mm-dd, tal como la manda la API.
+ */
+export const etiquetaDia = (dia) => {
+  if (!dia) return "";
+
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+
+  const comoTexto = (fecha) =>
+    `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(
+      fecha.getDate()
+    ).padStart(2, "0")}`;
+
+  if (dia === comoTexto(hoy)) return "Hoy";
+  if (dia === comoTexto(ayer)) return "Ayer";
+
+  // Se construye a mediodia para que el cambio de huso no mueva el dia.
+  const fecha = new Date(`${dia}T12:00:00`);
+  if (Number.isNaN(fecha.getTime())) return dia;
+
+  const mismoAno = fecha.getFullYear() === hoy.getFullYear();
+
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "numeric",
+    month: "long",
+    ...(mismoAno ? {} : { year: "numeric" })
+  }).format(fecha);
+};
