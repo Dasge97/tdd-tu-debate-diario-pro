@@ -1,6 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { bloquearFondo, liberarFondo } from "@/utils/fondoHojas";
+import { bloquearFondo, esLaDeArriba, liberarFondo } from "@/utils/fondoHojas";
 
 /**
  * Hoja que sube desde abajo y se superpone al contenido, como la de
@@ -54,8 +54,12 @@ const medirVariasVeces = () => {
   [60, 140, 260, 420].forEach((espera) => window.setTimeout(medirVentana, espera));
 };
 
+/* Marca de esta hoja dentro de la pila de hojas abiertas. */
+let marca = null;
+
 const alTeclado = (evento) => {
-  if (evento.key === "Escape") emit("cerrar");
+  // Escape cierra solo la hoja de arriba, no las que tenga debajo.
+  if (evento.key === "Escape" && esLaDeArriba(marca)) emit("cerrar");
 };
 
 watch(
@@ -63,10 +67,11 @@ watch(
   (abierta) => {
     if (abierta) {
       arrastre.value = 0;
-      bloquearFondo();
+      marca = bloquearFondo();
       window.addEventListener("keydown", alTeclado);
     } else {
-      liberarFondo();
+      liberarFondo(marca);
+      marca = null;
       window.removeEventListener("keydown", alTeclado);
     }
   }
@@ -82,7 +87,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  if (props.abierta) liberarFondo();
+  if (props.abierta) liberarFondo(marca);
   window.removeEventListener("keydown", alTeclado);
   window.visualViewport?.removeEventListener("resize", medirVariasVeces);
   window.visualViewport?.removeEventListener("scroll", medirVentana);
