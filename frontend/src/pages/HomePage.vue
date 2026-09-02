@@ -83,15 +83,13 @@ const { centinela, cargando: cargandoMas, seAcabo } = useCargaContinua(() =>
       <DebateSkeleton v-if="debates.cargandoFeed && !debates.feed.length" />
 
       <template v-for="(grupo, indice) in grupos" :key="grupo.dia">
-        <div
-          class="dia-separador"
-          :class="{ 'pegado-al-rotulo': indice === 0 && !personaFiltro }"
-        >
+        <div class="dia-separador" :class="{ 'pegado-al-rotulo': indice === 0 }">
           {{ etiquetaDia(grupo.dia) }}
         </div>
 
-        <!-- Solo bajo la primera fecha: es un resumen, no un adorno repetido. -->
-        <RotuloCalientes v-if="indice === 0 && !personaFiltro" />
+        <!-- Solo bajo la primera fecha: es un resumen global, y no cambia
+             aunque el feed este filtrado por un personaje. -->
+        <RotuloCalientes v-if="indice === 0" />
 
         <DebateCard v-for="debate in grupo.debates" :key="debate.id" :debate="debate" />
       </template>
