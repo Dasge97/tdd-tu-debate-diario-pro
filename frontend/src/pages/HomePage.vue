@@ -5,6 +5,7 @@ import DebateSkeleton from "@/components/DebateSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import Lateral from "@/components/Lateral.vue";
 import FilaPersonajes from "@/components/FilaPersonajes.vue";
+import RotuloCalientes from "@/components/RotuloCalientes.vue";
 import IndicadorRecarga from "@/components/IndicadorRecarga.vue";
 import { useDebatesStore } from "@/stores/debates";
 import { useTirarParaActualizar } from "@/composables/useTirarParaActualizar";
@@ -81,8 +82,11 @@ const { centinela, cargando: cargandoMas, seAcabo } = useCargaContinua(() =>
 
       <DebateSkeleton v-if="debates.cargandoFeed && !debates.feed.length" />
 
-      <template v-for="grupo in grupos" :key="grupo.dia">
+      <template v-for="(grupo, indice) in grupos" :key="grupo.dia">
         <div class="dia-separador">{{ etiquetaDia(grupo.dia) }}</div>
+
+        <!-- Solo bajo la primera fecha: es un resumen, no un adorno repetido. -->
+        <RotuloCalientes v-if="indice === 0 && !personaFiltro" />
 
         <DebateCard v-for="debate in grupo.debates" :key="debate.id" :debate="debate" />
       </template>

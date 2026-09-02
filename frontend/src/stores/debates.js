@@ -118,6 +118,7 @@ export const useDebatesStore = defineStore("debates", {
         const data = await debatesService.ticker();
         this.ticker = data;
         this.cache(data);
+        this.loadPositionsFor(data);
         return data;
       } catch (_) {
         return [];

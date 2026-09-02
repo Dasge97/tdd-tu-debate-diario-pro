@@ -2161,6 +2161,8 @@ h4 {
   text-transform: uppercase;
 }
 
+/* Una linea a cada lado deja la fecha centrada. */
+.dia-separador::before,
 .dia-separador::after {
   content: "";
   flex: 1 1 auto;
@@ -2172,5 +2174,115 @@ h4 {
   .personajes-fila {
     margin: 0 0 16px;
     padding: 2px 0 14px;
+  }
+}
+
+/* ---------- Rotulo de lo mas debatido ---------- */
+
+.rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 -12px 14px;
+  padding: 7px 12px;
+  border-top: 1px solid rgba(217, 211, 200, 0.7);
+  border-bottom: 1px solid rgba(217, 211, 200, 0.7);
+  background: rgba(255, 253, 249, 0.7);
+  overflow: hidden;
+}
+
+.rotulo-marca {
+  flex: 0 0 auto;
+  padding-right: 10px;
+  border-right: 1px solid var(--tdd-line);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tdd-primary);
+  white-space: nowrap;
+}
+
+.rotulo-ventana {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  /* Los extremos se difuminan para que el texto no aparezca de golpe. */
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+}
+
+.rotulo-cinta {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  animation-name: rotulo-pasa;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Al tocar o pasar el raton se para, para poder leer o pulsar. */
+.rotulo:hover .rotulo-cinta,
+.rotulo:active .rotulo-cinta {
+  animation-play-state: paused;
+}
+
+.rotulo-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5c6674;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.rotulo-titulo {
+  font-weight: 500;
+}
+
+.rotulo-cifras {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tdd-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.rotulo-cifras .material-symbols-rounded {
+  font-size: 14px;
+}
+
+.rotulo-separador {
+  color: var(--tdd-line);
+  padding: 0 4px;
+}
+
+@keyframes rotulo-pasa {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* La mitad, porque la lista esta puesta dos veces seguidas. */
+    transform: translateX(-50%);
+  }
+}
+
+/* Sin movimiento: se deja quieto y se puede desplazar con el dedo. */
+@media (prefers-reduced-motion: reduce) {
+  .rotulo-cinta {
+    animation: none;
+  }
+
+  .rotulo-ventana {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+@media (min-width: 1000px) {
+  .rotulo {
+    margin: 0 0 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 211, 200, 0.7);
   }
 }
