@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import UserAvatar from "@/components/UserAvatar.vue";
+import HojaReporte from "@/components/HojaReporte.vue";
 import { formatRelative } from "@/utils/format";
 import { participationService } from "@/services";
 import { useUiStore } from "@/stores/ui";
@@ -52,15 +53,11 @@ const votar = async (valor) => {
   }
 };
 
-const reportar = async () => {
-  if (!exigeSesion("reportar")) return;
+const reportando = ref(false);
 
-  try {
-    await participationService.reportComment(props.comment.id, "Reportado desde la web");
-    ui.success("Comentario reportado. Gracias.");
-  } catch (error) {
-    ui.error(errorMessage(error, "No hemos podido enviar el reporte."));
-  }
+const abrirReporte = () => {
+  if (!exigeSesion("reportar")) return;
+  reportando.value = true;
 };
 </script>
 
@@ -118,10 +115,17 @@ const reportar = async () => {
           Responder
         </button>
 
-        <button type="button" class="comment-vote" aria-label="Reportar" @click="reportar">
+        <button type="button" class="comment-vote" aria-label="Reportar" @click="abrirReporte">
           <span class="material-symbols-rounded" style="font-size: 18px">flag</span>
         </button>
       </div>
+
+      <HojaReporte
+        :abierta="reportando"
+        tipo="comentario"
+        :id="comment.id"
+        @cerrar="reportando = false"
+      />
 
       <div v-if="respuestas.length" class="comment-replies">
         <CommentItem

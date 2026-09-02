@@ -1,5 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { bloquearFondo, liberarFondo } from "@/utils/fondoHojas";
 
 /**
  * Hoja que sube desde abajo y se superpone al contenido, como la de
@@ -53,24 +54,6 @@ const medirVariasVeces = () => {
   [60, 140, 260, 420].forEach((espera) => window.setTimeout(medirVentana, espera));
 };
 
-let inicioY = 0;
-let scrollAlAbrir = 0;
-
-/* Con la hoja abierta, el fondo no debe moverse. */
-const bloquearFondo = () => {
-  scrollAlAbrir = window.scrollY;
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${scrollAlAbrir}px`;
-  document.body.style.width = "100%";
-};
-
-const liberarFondo = () => {
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.width = "";
-  window.scrollTo(0, scrollAlAbrir);
-};
-
 const alTeclado = (evento) => {
   if (evento.key === "Escape") emit("cerrar");
 };
@@ -106,6 +89,8 @@ onBeforeUnmount(() => {
   window.removeEventListener("focusin", medirVariasVeces);
   window.removeEventListener("focusout", medirVariasVeces);
 });
+
+let inicioY = 0;
 
 /* Arrastrar hacia abajo para cerrar. Solo cuenta si la lista esta arriba del
    todo; si no, el dedo esta desplazando el contenido. */

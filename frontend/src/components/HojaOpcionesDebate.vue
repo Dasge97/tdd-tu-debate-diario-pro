@@ -6,6 +6,7 @@ import { useUiStore } from "@/stores/ui";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useSesion } from "@/composables/useSesion";
 import { errorMessage } from "@/api/client";
+import { MOTIVOS_REPORTE } from "@/utils/reportes";
 
 /** Menu de opciones de un debate: compartir, guardar, copiar enlace, reportar. */
 
@@ -22,12 +23,7 @@ const { exigeSesion } = useSesion();
 
 const pidiendoMotivo = ref(false);
 
-const MOTIVOS = [
-  "Contenido ofensivo o de odio",
-  "Información falsa",
-  "Spam o publicidad",
-  "Otro motivo"
-];
+
 
 const enlace = () => `${window.location.origin}/app/debate/${props.debate.id}`;
 
@@ -84,7 +80,7 @@ const abrirMotivos = () => {
 const reportar = async (motivo) => {
   try {
     await debatesService.report(props.debate.id, motivo);
-    ui.success("Debate reportado. Gracias.");
+    ui.success("Gracias. Lo revisaremos.");
   } catch (error) {
     ui.error(errorMessage(error, "No hemos podido enviar el reporte."));
   }
@@ -106,15 +102,19 @@ const cerrar = () => {
     @cerrar="cerrar"
   >
     <template v-if="pidiendoMotivo">
+      <p class="text-muted" style="margin: 0 0 8px; font-size: 0.88rem">
+        Elige el motivo. Lo revisará una persona del equipo.
+      </p>
+
       <button
-        v-for="motivo in MOTIVOS"
-        :key="motivo"
+        v-for="motivo in MOTIVOS_REPORTE"
+        :key="motivo.valor"
         type="button"
         class="hoja-opcion"
-        @click="reportar(motivo)"
+        @click="reportar(motivo.valor)"
       >
-        <span class="material-symbols-rounded">flag</span>
-        {{ motivo }}
+        <span class="material-symbols-rounded">{{ motivo.icono }}</span>
+        {{ motivo.valor }}
       </button>
     </template>
 
