@@ -180,7 +180,8 @@ export function fakeApi({ mode = 'dry_run', target = 5, limits = LIMITS, persona
       if (run.mode !== 'live') throw new Error('una ejecución de prueba no publica');
       if (run.status === 'published') return { status: 'published', created: 0, debate_ids: run.debateIds, already_published: true };
       const validated = run.assignments.filter((a) => a.status === 'validated').slice(0, target);
-      if (validated.length < target) throw Object.assign(new Error('CONFLICT: lote incompleto'), { status: 409 });
+      const min = Math.max(1, Math.min(target, limits.minDebates ?? target));
+      if (validated.length < min) throw Object.assign(new Error('CONFLICT: lote incompleto'), { status: 409 });
       run.debateIds = validated.map((a, i) => { db.published.push({ ...a.draft, persona_id: a.persona_id, event_id: a.event_id }); return i + 1; });
       validated.forEach((a) => { a.status = 'published'; });
       run.status = 'published';

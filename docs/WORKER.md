@@ -34,7 +34,7 @@ conversación global con el modelo: cada llamada recibe solo lo que necesita.
 | `dossier` | Por candidato: hechos con cita a la evidencia, declaraciones atribuidas, cifras, discrepancias, incógnitas, propuestas votables y encaje por especialidad. Se guarda en caché por acontecimiento + hash de evidencia + versión del prompt + modelo. Si no salen objetivo + 1 dossiers válidos, tira de la reserva hasta `maxDossiers`. | 1 llamada por candidato nuevo |
 | `assign` | Elige a la vez qué acontecimientos y qué personajes, sin modelo: encaje con la especialidad, calidad del acontecimiento y rotación. Guarda la asignación estructurada con sus puntuaciones y motivos. | No |
 | `generate` | Por asignación: redacción, validación determinista y revisión editorial. Hay una reparación como mucho. Si un debate se rechaza, prueba con una pareja de reserva que ya tiene dossier válido. | 2 llamadas por debate (3–4 si hay reparación) |
-| publicación | Si es una ejecución en vivo y hay N debates válidos, el backend publica el lote en una transacción. Si no, no publica nada. | No |
+| publicación | Se intenta un debate por personaje (`target_debates`, 8). Si es una ejecución en vivo y hay al menos `minDebates` válidos (1 por defecto), el backend publica en una transacción el lote con todos los válidos. Si no, no publica nada. Los personajes sin debate quedan anotados con el motivo. | No |
 
 ### Neutralidad y estilo
 
@@ -77,9 +77,10 @@ Todos se cambian en el panel (`/admin/editorial` → «Límites»). Estos son lo
 
 | Límite | Valor |
 |---|---|
-| Llamadas al modelo por ejecución | 40 |
-| Tokens por ejecución | 250.000 |
-| Candidatos a dossier | 10, más reserva hasta 20 dossiers |
+| Mínimo de debates para publicar | 1 |
+| Llamadas al modelo por ejecución | 60 |
+| Tokens por ejecución | 300.000 |
+| Candidatos a dossier | 10, más reserva hasta 24 dossiers |
 | Fragmentos de evidencia por dossier | 6, de 900 caracteres |
 | Caracteres de entrada por llamada | 14.000 |
 | Tokens de salida por llamada | 2.500 (auth2api con cuenta de ChatGPT lo ignora; ahí manda el total por ejecución) |
@@ -96,7 +97,7 @@ Si se agota el presupuesto, la ejecución termina como `incomplete` con el motiv
 |---|---|
 | `published` | Lote publicado entero. |
 | `completed` | Ejecución de prueba terminada. No publica nada. |
-| `incomplete` | No se reunieron N debates válidos: faltan candidatos, evidencia o presupuesto. El motivo queda en el panel. |
+| `incomplete` | No se llegó al mínimo de debates válidos: faltan candidatos, evidencia o presupuesto. El motivo queda en el panel. |
 | `failed` | Error inesperado o falta de configuración. |
 | `aborted` | Sin latido durante 20 minutos: el proceso se cayó. |
 

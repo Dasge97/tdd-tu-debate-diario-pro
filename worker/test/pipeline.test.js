@@ -70,6 +70,16 @@ test('un debate que no supera la validación se reemplaza por otra pareja respal
   assert.equal(pixieCalls.length, 2);
 });
 
+test('un intento por personaje: se publican los válidos aunque alguno no salga', async () => {
+  const api = fakeApi({ mode: 'live', target: 8, limits: { ...LIMITS, minDebates: 1 } });
+  const report = await run(api, fakeLlmTransport({ failGenerateFor: 'Pixie' }));
+
+  assert.equal(report.status, 'published');
+  assert.ok(api.db.published.length >= 1 && api.db.published.length <= 8);
+  assert.equal(new Set(api.db.published.map((d) => d.persona_id)).size, api.db.published.length);
+  assert.ok(Array.isArray(report.without_debate));
+});
+
 test('si se agota el presupuesto la ejecución queda incompleta y no publica', async () => {
   const api = fakeApi({ mode: 'live', limits: { ...LIMITS, maxLlmCalls: 6 } });
   const report = await run(api, fakeLlmTransport());

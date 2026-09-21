@@ -63,14 +63,17 @@ class EditorialPublisher
                 throw new \RuntimeException('CONFLICT: la ejecución no está en marcha (' . $run->getStatus() . ')');
             }
 
+            // Se intenta un debate por personaje (target) y se publican los válidos
+            // si llegan al mínimo. El lote sigue siendo todo o nada.
             $target = (int) ($run->getConfig()['target_debates'] ?? 5);
+            $min = max(1, min($target, (int) ($run->getConfig()['limits']['minDebates'] ?? $target)));
             $candidates = $this->assignments->findBy(['run' => $run, 'status' => 'validated'], ['slot' => 'ASC']);
             $batch = $this->pickBatch($candidates, $target);
-            if (count($batch) < $target) {
+            if (count($batch) < $min) {
                 throw new \RuntimeException(sprintf(
-                    'CONFLICT: hay %d debates válidos de %d; no se publica un lote incompleto',
+                    'CONFLICT: hay %d debates válidos y el mínimo para publicar es %d',
                     count($batch),
-                    $target
+                    $min
                 ));
             }
 

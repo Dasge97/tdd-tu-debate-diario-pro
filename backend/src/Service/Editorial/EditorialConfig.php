@@ -21,6 +21,9 @@ class EditorialConfig
      */
     public const DEFAULT_LIMITS = [
         'timezone'              => 'Europe/Madrid',
+        // Publicación: se intenta un debate por personaje (target_debates) y se
+        // publica el lote con los válidos si hay al menos este número.
+        'minDebates'            => 1,
         // Ingesta
         'maxItemsPerSource'     => 40,
         'maxArticleAgeHours'    => 48,
@@ -31,7 +34,7 @@ class EditorialConfig
         // Agrupación y selección
         'clusterWindowHours'    => 72,
         'maxCandidates'         => 10,
-        'maxDossiers'           => 20,
+        'maxDossiers'           => 24,
         'maxEvidencePerDossier' => 6,
         'maxEvidenceChars'      => 900,
         // Modelo
@@ -39,8 +42,8 @@ class EditorialConfig
         'maxOutputTokens'       => 2500,
         'llmTimeoutMs'          => 180000,
         'llmConcurrency'        => 2,
-        'maxLlmCalls'           => 40,
-        'maxTotalTokens'        => 250000,
+        'maxLlmCalls'           => 60,
+        'maxTotalTokens'        => 300000,
         'maxRepairAttempts'     => 1,
         'maxReplacements'       => 3,
     ];

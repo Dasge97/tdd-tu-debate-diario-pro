@@ -35,6 +35,9 @@ export async function runEditorial({
   const limits = config.limits;
   const mode = modeOverride ?? config.mode;
   const target = config.target_debates;
+  // Se intenta un debate por personaje (target) y se publica el lote con los
+  // válidos si llegan a este mínimo.
+  const minDebates = Math.max(1, Math.min(target, limits.minDebates ?? target));
   const day = editorialDay(now, limits.timezone);
 
   const started = await api.startRun({ mode, editorial_day: day, triggered_by: triggeredBy, resume });
@@ -143,7 +146,7 @@ export async function runEditorial({
       result.discarded.forEach((d) => { const k = d.reason.split(/[:"]/)[0].trim(); reasons[k] = (reasons[k] ?? 0) + 1; });
       return { candidates: candidates.length, reserve: reserve.length, discarded: result.discarded.length, discard_reasons: reasons, candidate_titles: candidates.map((c) => c.title) };
     });
-    if (candidates.length < target) {
+    if (candidates.length < minDebates) {
       return await finish('incomplete', `solo ${candidates.length} acontecimientos candidatos para ${target} debates`);
     }
 
@@ -216,7 +219,7 @@ export async function runEditorial({
         alternatives: plan.alternatives.length,
       };
     });
-    if (plan.assignments.length < target) {
+    if (plan.assignments.length < minDebates) {
       return await finish('incomplete', `solo ${plan.assignments.length} asignaciones posibles para ${target} debates. ${plan.exceptions.join(' ')}`.trim());
     }
 
@@ -287,10 +290,14 @@ export async function runEditorial({
 
     const run = await api.run(runId);
     const validated = run.assignments.filter((a) => a.status === 'validated');
-    if (validated.length < target) {
-      const reason = budgetNote ?? `solo ${validated.length} debates superaron validación y revisión de ${target}`;
+    if (validated.length < minDebates) {
+      const reason = budgetNote ?? `solo ${validated.length} debates superaron validación y revisión (mínimo ${minDebates})`;
       return await finish('incomplete', reason);
     }
+
+    // Quién se queda hoy sin debate, para verlo en el panel.
+    const covered = new Set(validated.map((a) => a.persona_id));
+    report.without_debate = personas.filter((p) => !covered.has(p.id)).map((p) => p.username);
 
     // 7. Publicación (solo en vivo)
     if (mode !== 'live') {

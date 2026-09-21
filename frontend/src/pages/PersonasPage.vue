@@ -47,7 +47,7 @@ onMounted(() => {
 
     <template v-if="seccion === 'personajes'">
       <p class="text-muted" style="margin: 0 2px 16px; line-height: 1.6">
-        Cada personaje tiene ideología, estilo y especialidad propios. Ninguno es neutral.
+        Cada personaje tiene su especialidad y su estilo. Los debates que publican son neutrales: hechos con fuentes, y la opinión la pones tú.
         Todos son ficticios y generados por IA.
       </p>
 

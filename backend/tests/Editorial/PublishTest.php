@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Editorial;
 
 use App\Entity\EditorialRun;
+use App\Entity\WorkerConfig;
 use App\Service\Editorial\EditorialPublisher;
 
 /** Publicación del lote: todo o nada, sin duplicados aunque se repita. */
@@ -46,9 +47,24 @@ class PublishTest extends EditorialTestCase
         self::assertSame(5, $this->countDebates());
     }
 
-    public function testUnLoteIncompletoNoPublicaNada(): void
+    public function testConMinimoUnoSePublicanLosValidosQueHaya(): void
+    {
+        $personas = $this->personas(8);
+        $this->em->find(WorkerConfig::class, 1)->setTargetDebates(8);
+        $this->em->flush();
+        $run = $this->liveRunWithValidated($personas, 4);
+
+        $result = $this->publisher()->publish($run->getId());
+
+        self::assertSame(4, $result['created']);
+        self::assertSame(4, $this->countDebates());
+    }
+
+    public function testPorDebajoDelMinimoNoPublicaNada(): void
     {
         $personas = $this->personas(6);
+        $this->em->find(WorkerConfig::class, 1)->setEditorialLimits(['minDebates' => 5]);
+        $this->em->flush();
         $run = $this->liveRunWithValidated($personas, 4);
 
         try {
