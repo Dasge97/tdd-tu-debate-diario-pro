@@ -197,6 +197,10 @@ const enviar = async (contenido) => {
 
           <h1 class="debate-title">{{ debate.title }}</h1>
 
+          <p v-if="debate.question" class="debate-story-paragraph debate-story-question">
+            {{ debate.question }}
+          </p>
+
           <p v-if="debate.cardSummary" class="debate-story-paragraph debate-story-intro">
             {{ debate.cardSummary }}
           </p>
@@ -222,7 +226,6 @@ const enviar = async (contenido) => {
           </p>
 
           <div style="margin-top: 20px">
-            <p v-if="debate.question" class="debate-vote-question">{{ debate.question }}</p>
             <PositionBar :percentages="porcentajes" />
 
             <div class="position-picker">
