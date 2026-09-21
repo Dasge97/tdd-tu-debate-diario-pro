@@ -169,8 +169,12 @@ export async function runEditorial({
       });
 
       await process(candidates);
-      // Una pareja de margen sobre el objetivo, para poder reemplazar un debate rechazado.
-      while (counters.ok < target + 1 && reserve.length && counters.built < limits.maxDossiers && !budgetNote) {
+      // Se sigue con la reserva mientras no haya objetivo + 1 dossiers válidos o
+      // mientras con ellos no salgan `target` parejas asignables (el encaje por
+      // especialidad y la regla de un asunto por día descartan algunos).
+      const personasNow = await api.personas();
+      const assignable = () => assign({ personas: personasNow, candidates, target, rotationLimitDays: config.rotation_limit_days }).assignments.length;
+      while ((counters.ok < target + 1 || assignable() < target) && reserve.length && counters.built < limits.maxDossiers && !budgetNote) {
         const batch = reserve.splice(0, Math.min(4, limits.maxDossiers - counters.built));
         candidates.push(...batch);
         counters.from_reserve += batch.length;

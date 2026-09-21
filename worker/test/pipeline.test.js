@@ -109,6 +109,16 @@ test('si muchos dossiers salen sin propuesta votable, se tira de la reserva', as
   assert.ok(report.stages.dossier.built <= LIMITS.maxDossiers);
 });
 
+test('si los dossiers válidos no dan para cinco parejas, sigue con la reserva', async () => {
+  // Con 5 candidatos y personajes que solo encajan con economía, hacen falta más acontecimientos.
+  const limits = { ...LIMITS, maxCandidates: 5 };
+  const api = fakeApi({ mode: 'dry_run', limits });
+  const report = await run(api, fakeLlmTransport());
+  assert.ok(report.stages.dossier.ok >= 5);
+  assert.equal(report.status, 'completed');
+  assert.equal([...api.db.runs.values()][0].assignments.filter((a) => a.status === 'validated').length, 5);
+});
+
 test('reanudar una ejecución incompleta completa las asignaciones que faltan', async () => {
   const api = fakeApi({ mode: 'dry_run' });
   // Primera vez: el modelo da insuficiente casi todo y la ejecución queda incompleta.
