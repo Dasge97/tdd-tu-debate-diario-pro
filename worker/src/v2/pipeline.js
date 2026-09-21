@@ -200,11 +200,18 @@ export async function runEditorial({
       // mientras con ellos no salgan `target` parejas asignables (el encaje por
       // especialidad y la regla de un asunto por día descartan algunos).
       const assignable = () => planDay(target).assignments.length;
-      while ((counters.ok < target + 1 || assignable() < target) && reserve.length && counters.built < limits.maxDossiers && !budgetNote) {
+      // Se deja de tirar de la reserva si un lote no añade parejas asignables:
+      // los personajes que faltan no tienen hoy acontecimientos de su tema.
+      let before = assignable();
+      while ((counters.ok < target + 1 || before < target) && reserve.length && counters.built < limits.maxDossiers && !budgetNote) {
         const batch = reserve.splice(0, Math.min(4, limits.maxDossiers - counters.built));
         candidates.push(...batch);
         counters.from_reserve += batch.length;
         await process(batch);
+        const after = assignable();
+        if (after <= before && counters.ok >= target + 1) break;
+        if (after <= before && counters.from_reserve >= 8) break;
+        before = after;
       }
       return { ...counters, insufficient_events: insufficient, budget_stop: budgetNote };
     });

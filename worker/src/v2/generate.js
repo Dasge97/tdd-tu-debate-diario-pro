@@ -1,8 +1,8 @@
 import { extractJson } from './llm.js';
 import { LIMITS, validateDraft } from './validate.js';
 
-export const GENERATE_PROMPT_VERSION = 'generate-v6';
-export const REVIEW_PROMPT_VERSION = 'review-v6';
+export const GENERATE_PROMPT_VERSION = 'generate-v7';
+export const REVIEW_PROMPT_VERSION = 'review-v7';
 
 /** Instrucciones añadidas cuando el personaje no tiene hoy actualidad con una medida concreta. */
 const FONDO_RULES = `DEBATE DE FONDO
@@ -76,14 +76,15 @@ HECHOS Y NEUTRALIDAD (obligatorio)
 - El lector no sabe que existe un dossier: no escribas "dossier", "fragmento", "extracto" ni "evidencia".
 
 PERSONAJE
-- El personaje presenta el debate con su voz en el title y el card_summary: su vocabulario, su ritmo y su manera de ver el dilema desde su especialidad. Que se note quién lo firma.
-- Su voz nunca toma partido: plantea la tensión, no la resuelve. Nada de ironía sobre los implicados.
+- El personaje se nota en el ÁNGULO desde el que plantea el dilema, según su especialidad: quien lleva economía lo plantea en costes, eficiencia y quién paga; ética, en qué regla moral está en juego; política, en quién decide y con qué poder; ciencia, en qué dice la evidencia y qué falta por saber; tecnología, en qué cambia la tecnología; sociedad, en a quién afecta en el día a día; filosofía, en qué idea de fondo está en juego; medioambiente, en qué efectos tiene sobre el entorno a largo plazo.
+- Lenguaje llano y claro. Nada de metáforas, frases hechas, coloquialismos ni exageraciones ("bisturí", "bronca", "la enésima", "cómo no"...). Nada de adjetivos sobre los implicados o sobre la medida.
+- Su voz plantea la tensión, no la resuelve.
 
 FORMATO
 - Español. Responde solo con JSON válido.
-- title: de ${tMin} a ${tMax} caracteres, termina en "?". La pregunta de fondo con la voz del personaje, que dé ganas de entrar. No es el titular de la noticia.
+- title: de ${tMin} a ${tMax} caracteres, termina en "?". La pregunta de fondo del dilema, desde el ángulo del personaje, dicha de forma directa. No es el titular de la noticia.
 - question: de ${qMin} a ${qMax} caracteres, termina en "?", distinta del title. La medida concreta que se vota, dicha de forma llana.
-- card_summary: de ${sMin} a ${sMax} caracteres. Qué se propone y por qué divide, en una o dos frases. No es un resumen de la noticia.
+- card_summary: de ${sMin} a ${sMax} caracteres. Qué se propone y qué valores o intereses chocan, en una o dos frases llanas. No es un resumen de la noticia.
 - context: de ${wMin} a ${wMax} palabras, con estos bloques en este orden, cada título en su propia línea y exactamente así:
 Qué ha pasado
 (2 o 3 frases con los hechos y quién los cuenta)
@@ -122,8 +123,12 @@ Suspende el borrador si:
 - la pregunta no trata una única propuesta votable a favor/en contra/neutral, presupone la respuesta, acusa, es doble o menciona quién apoya o rechaza la medida (question);
 - la pregunta pide votar sobre una persona concreta en un caso judicial: su culpabilidad, si debe ser juzgada o condenada, o una actuación procesal de su caso (question);
 - los bloques A favor y En contra no están equilibrados: uno tiene argumentos más fuertes, más largos o más cuidados que el otro, o alguno es un argumento de paja (balance);
-- un argumento introduce un dato, cifra, estudio o cita que no está en el dossier (unsupported_fact). Un razonamiento general sin datos nuevos sí vale;
+- un argumento introduce un dato, cifra, estudio, suceso o cita que no está en el dossier (unsupported_fact);
 - el title o el card_summary dan la razón a un lado (bias).
+
+NO suspendas por esto:
+- El planteamiento del dilema ("Qué se discute") y los argumentos de cada lado son razonamientos, no hechos: valen aunque no estén en el dossier, siempre que no metan datos, cifras, sucesos o citas nuevos.
+- Un título que plantea la pregunta desde un ángulo (costes, reglas morales, poder...) no es sesgo si no da la razón a ningún lado.
 
 Responde solo con JSON válido.`;
 
