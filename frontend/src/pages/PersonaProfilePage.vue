@@ -149,7 +149,7 @@ const datos = computed(() => persona.value?.personaSheet?.datos || []);
   display: grid;
   grid-template-columns: minmax(0, 40%) minmax(0, 1fr);
   gap: 14px;
-  align-items: end;
+  align-items: start;
 }
 
 .ficha-cabecera.sin-escena {
