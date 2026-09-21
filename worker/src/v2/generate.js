@@ -1,7 +1,7 @@
 import { extractJson } from './llm.js';
 import { LIMITS, validateDraft } from './validate.js';
 
-export const GENERATE_PROMPT_VERSION = 'generate-v9';
+export const GENERATE_PROMPT_VERSION = 'generate-v10';
 export const REVIEW_PROMPT_VERSION = 'review-v9';
 
 /** Instrucciones añadidas cuando el personaje no tiene hoy actualidad con una medida concreta. */
@@ -81,7 +81,7 @@ FORMATO
 - title: de ${tMin} a ${tMax} caracteres, termina en "?". La pregunta que el personaje lanza, con su voz.
 - question: de ${qMin} a ${qMax} caracteres, termina en "?", distinta del title. La medida o idea concreta que se vota, dicha de forma llana y sin presuponer la respuesta.
 - card_summary: de ${sMin} a ${sMax} caracteres. La primera frase del personaje, la que engancha: en primera persona y sin tomar partido.
-- context: de ${wMin} a ${wMax} palabras. La intervención completa del personaje, en párrafos cortos separados por una línea en blanco. Sin títulos, sin listas y sin viñetas.
+- context: de ${wMin} a ${wMax} palabras. La intervención del personaje a partir del card_summary, sin repetirlo: el lector ya lo ha leído justo antes. Párrafos cortos separados por una línea en blanco. Sin títulos, sin listas y sin viñetas.
 - used_refs: ids de las fuentes que has usado. primary_ref: la fuente principal.`;
 
   const user = `PERSONAJE: ${persona.display_name} (especialidad: ${persona.specialty})
@@ -139,11 +139,16 @@ export function toDraft(raw, dossier, model) {
   const sources = [...new Set([primary.id, ...used])].map((id) => byId.get(id))
     .map((e) => ({ name: e.source, url: e.url, published_at: e.published_at }));
 
+  // El resumen se muestra justo antes del texto: si el texto empieza repitiéndolo, se quita.
+  const summary = String(data.card_summary ?? '').trim();
+  let context = String(data.context ?? '').trim();
+  if (summary && context.startsWith(summary)) context = context.slice(summary.length).trim();
+
   return {
     title: String(data.title ?? '').trim(),
     question: String(data.question ?? '').trim(),
     card_summary: String(data.card_summary ?? '').trim(),
-    context: String(data.context ?? '').trim(),
+    context,
     source_name: primary.source,
     source_url: primary.url,
     sources,
