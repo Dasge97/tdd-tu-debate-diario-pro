@@ -1,7 +1,7 @@
 import { extractJson } from './llm.js';
 import { LIMITS, validateDraft } from './validate.js';
 
-export const GENERATE_PROMPT_VERSION = 'generate-v7';
+export const GENERATE_PROMPT_VERSION = 'generate-v8';
 export const REVIEW_PROMPT_VERSION = 'review-v7';
 
 /** Instrucciones añadidas cuando el personaje no tiene hoy actualidad con una medida concreta. */
@@ -69,7 +69,7 @@ QUÉ HACE BUENO UN DEBATE
 
 HECHOS Y NEUTRALIDAD (obligatorio)
 - Los hechos, cifras, fechas y citas salen SOLO del dossier. Nunca inventes un dato, un estudio, una cifra ni una declaración.
-- Los argumentos pueden ser razonamientos generales ("quienes lo defienden sostienen que...", "sus críticos advierten de que..."), pero sin datos nuevos. Si un argumento lo defiende alguien concreto del dossier, atribúyeselo.
+- Los argumentos pueden ser razonamientos generales ("quienes lo defienden sostienen que...", "sus críticos advierten de que..."), pero sin datos nuevos. Si un argumento lo defiende alguien concreto del dossier, atribúyeselo. Escríbelos con seguridad: nada de "pueden sostener" o "podrían argumentar".
 - Toda afirmación de parte se atribuye. Nada de adjetivos valorativos. El texto no da la razón a nadie.
 - La pregunta trata UNA sola medida, no presupone la respuesta, no acusa, no mete dos preguntas en una y no menciona quién está a favor o en contra.
 - En casos judiciales nunca se vota sobre una persona concreta (culpabilidad, juicio, diligencias de su causa): el debate es una cuestión pública que plantea el caso.
@@ -84,7 +84,7 @@ FORMATO
 - Español. Responde solo con JSON válido.
 - title: de ${tMin} a ${tMax} caracteres, termina en "?". La pregunta de fondo del dilema, desde el ángulo del personaje, dicha de forma directa. No es el titular de la noticia.
 - question: de ${qMin} a ${qMax} caracteres, termina en "?", distinta del title. La medida concreta que se vota, dicha de forma llana.
-- card_summary: de ${sMin} a ${sMax} caracteres. Qué se propone y qué valores o intereses chocan, en una o dos frases llanas. No es un resumen de la noticia.
+- card_summary: de ${sMin} a ${sMax} caracteres. Qué se propone y qué valores o intereses están en juego, en una o dos frases llanas y naturales. No es un resumen de la noticia. Nada de fórmulas fijas: no empieces por "Chocan", "El dilema enfrenta" ni "Se plantea".
 - context: de ${wMin} a ${wMax} palabras, con estos bloques en este orden, cada título en su propia línea y exactamente así:
 Qué ha pasado
 (2 o 3 frases con los hechos y quién los cuenta)
