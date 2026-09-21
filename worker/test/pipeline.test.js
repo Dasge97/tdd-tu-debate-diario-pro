@@ -80,6 +80,24 @@ test('un intento por personaje: se publican los válidos aunque alguno no salga'
   assert.ok(Array.isArray(report.without_debate));
 });
 
+test('un personaje sin actualidad con medida concreta publica un debate de fondo de su tema', async () => {
+  // Las noticias de medioambiente (Segura, Ourense) no traen ninguna medida: solo una cuestión general.
+  const api = fakeApi({ mode: 'live', target: 8, limits: { ...LIMITS, minDebates: 1 } });
+  const llm = fakeLlmTransport({ backgroundFor: 'Segura|Ourense' });
+  const report = await run(api, llm);
+
+  const assignments = [...api.db.runs.values()][0].assignments;
+  const fondo = assignments.find((a) => a.scores?.kind === 'fondo');
+  assert.ok(fondo, 'hay una asignación de fondo');
+  assert.equal(fondo.persona_username, 'artemisa');
+  assert.equal(fondo.status, 'published');
+  assert.ok(llm.log.some((l) => l.user.includes('DEBATE DE FONDO') && l.user.includes('Una cuestión general')));
+  // Un dossier solo de fondo nunca se usa para un debate de actualidad.
+  const segura = [...api.db.events.values()].find((e) => /Segura/.test(e.title));
+  assert.ok(assignments.filter((a) => a.event_id === segura.event_id).every((a) => a.scores?.kind === 'fondo'));
+  assert.equal(report.status, 'published');
+});
+
 test('si se agota el presupuesto la ejecución queda incompleta y no publica', async () => {
   const api = fakeApi({ mode: 'live', limits: { ...LIMITS, maxLlmCalls: 6 } });
   const report = await run(api, fakeLlmTransport());

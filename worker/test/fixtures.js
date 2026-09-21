@@ -167,7 +167,7 @@ export function fakeApi({ mode = 'dry_run', target = 5, limits = LIMITS, persona
         let a = run.assignments.find((x) => x.slot === item.slot);
         if (!a) {
           const dossier = db.dossiers.find((d) => d.id === item.dossier_id);
-          if (!dossier || dossier.status !== 'ok') throw new Error('evidencia insuficiente');
+          if (!dossier || !['ok', 'background'].includes(dossier.status)) throw new Error('evidencia insuficiente');
           a = { slot: item.slot, persona_id: item.persona_id, persona_username: personas.find((p) => p.id === item.persona_id).username, event_id: item.event_id, dossier_id: item.dossier_id, status: 'planned' };
           run.assignments.push(a);
         }
@@ -212,7 +212,7 @@ const words = (n, w = 'dato') => Array.from({ length: n }, (_, i) => `${w}${i % 
  * Modelo falso. Reconoce el tipo de llamada por el prompt de sistema.
  * `failGenerateFor` hace que el borrador de un personaje salga siempre mal.
  */
-export function fakeLlmTransport({ failGenerateFor = null, usage = true, insufficientFor = null } = {}) {
+export function fakeLlmTransport({ failGenerateFor = null, usage = true, insufficientFor = null, backgroundFor = null } = {}) {
   const log = [];
   const transport = async (body) => {
     const system = body.messages[0].content;
@@ -233,11 +233,13 @@ export function fakeLlmTransport({ failGenerateFor = null, usage = true, insuffi
       if (insufficientFor && new RegExp(insufficientFor, 'i').test(user)) {
         return reply({ status: 'insufficient', insufficient_reason: 'solo titulares', facts: [], debatable_proposals: [], specialty_fit: fit });
       }
+      const onlyBackground = backgroundFor && new RegExp(backgroundFor, 'i').test(user);
       return reply({
         status: 'ok', headline: 'Titular neutral', summary: 'Resumen neutral.',
         facts: [{ text: 'Hecho uno', refs: [ids[0]] }, { text: 'Hecho dos', refs: ids.slice(0, 2) }, { text: 'Hecho tres', refs: [ids[0], 'E99'] }],
         claims: [{ actor: 'Portavoz', statement: 'Es una buena medida', refs: [ids[0]] }],
-        debatable_proposals: [{ proposal: 'Aplicar la medida anunciada', who_decides: 'la institución', refs: [ids[0]] }],
+        debatable_proposals: onlyBackground ? [] : [{ proposal: 'Aplicar la medida anunciada', who_decides: 'la institución', refs: [ids[0]] }],
+        background_proposals: [{ proposal: 'Una cuestión general que plantea la noticia', refs: [ids[0]] }],
         specialty_fit: fit, spain_relevance: 0.9, public_interest: 0.7,
       });
     }

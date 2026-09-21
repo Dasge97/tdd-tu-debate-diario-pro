@@ -18,8 +18,12 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'uniq_editorial_dossier_cache', columns: ['event_id', 'evidence_hash', 'prompt_version', 'model'])]
 class EditorialDossier
 {
-    /** ok: se puede redactar; insufficient: la evidencia no basta para redactar con rigor. */
-    public const STATUSES = ['ok', 'insufficient'];
+    /**
+     * ok: se puede redactar un debate de actualidad. background: hay hechos pero
+     * ninguna medida concreta; solo sirve para un debate de fondo. insufficient:
+     * la evidencia no basta para redactar con rigor.
+     */
+    public const STATUSES = ['ok', 'background', 'insufficient'];
 
     #[ORM\Id]
     #[ORM\GeneratedValue]

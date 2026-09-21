@@ -32,9 +32,18 @@ conversación global con el modelo: cada llamada recibe solo lo que necesita.
 | `cluster` | Agrupa en acontecimientos las noticias que cuentan el mismo suceso: cercanía en el tiempo, vocabulario y nombres propios compartidos. Respeta los acontecimientos que ya existían. | No |
 | `preselect` | Descarta noticias sin fecha, antiguas, piezas de servicio (directos, «Consulte…», sorteos), acontecimientos con solo fuentes institucionales, los ya publicados sin novedades, los parecidos a un debate reciente y la misma historia contada dos veces. Puntúa el resto por actualidad, cobertura independiente y prioridad española. Elige `maxCandidates` repartidos por tema y deja una reserva. | No |
 | `dossier` | Por candidato: hechos con cita a la evidencia, declaraciones atribuidas, cifras, discrepancias, incógnitas, propuestas votables y encaje por especialidad. Se guarda en caché por acontecimiento + hash de evidencia + versión del prompt + modelo. Si no salen objetivo + 1 dossiers válidos, tira de la reserva hasta `maxDossiers`. | 1 llamada por candidato nuevo |
-| `assign` | Elige a la vez qué acontecimientos y qué personajes, sin modelo: encaje con la especialidad, calidad del acontecimiento y rotación. Guarda la asignación estructurada con sus puntuaciones y motivos. | No |
+| `assign` | Elige a la vez qué acontecimientos y qué personajes, sin modelo: encaje con la especialidad, calidad del acontecimiento y rotación. Después, a cada personaje que se quede sin nada le busca un **debate de fondo** (ver abajo). Guarda la asignación estructurada con sus puntuaciones y motivos. | No |
 | `generate` | Por asignación: redacción, validación determinista y revisión editorial. Hay una reparación como mucho. Si un debate se rechaza, prueba con una pareja de reserva que ya tiene dossier válido. | 2 llamadas por debate (3–4 si hay reparación) |
 | publicación | Se intenta un debate por personaje (`target_debates`, 8). Si es una ejecución en vivo y hay al menos `minDebates` válidos (1 por defecto), el backend publica en una transacción el lote con todos los válidos. Si no, no publica nada. Los personajes sin debate quedan anotados con el motivo. | No |
+
+### Debates de fondo
+
+Hay personajes (Artemisa, Axion, Nodo) que muchos días no tienen ninguna noticia con una medida concreta de su tema. Para ellos:
+
+- El dossier recoge, además de las medidas concretas, las cuestiones generales de interés público que la noticia plantea (por ejemplo, ante un avance médico: que la sanidad pública financie ese tratamiento). Si solo tiene cuestiones generales, su estado es `background`.
+- La asignación, tras repartir la actualidad, da a cada personaje sin debate un acontecimiento de su tema con dossier `ok` o `background` que no esté ya en el lote ni sea del mismo asunto. La asignación queda marcada con `kind: fondo`.
+- La redacción parte de la noticia (con sus fuentes) y plantea la cuestión general, sin presentarla como algo que alguien haya propuesto o aprobado. Mismas reglas de neutralidad y la misma revisión.
+- Un dossier `background` nunca se usa para un debate de actualidad.
 
 ### Neutralidad y estilo
 

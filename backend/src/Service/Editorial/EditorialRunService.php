@@ -230,7 +230,7 @@ class EditorialRunService
                 if ($event === null || $dossier === null || $dossier->getEvent()->getId() !== $event->getId()) {
                     throw new \InvalidArgumentException('acontecimiento o dossier no válidos para la asignación');
                 }
-                if ($dossier->getStatus() !== 'ok') {
+                if (!in_array($dossier->getStatus(), ['ok', 'background'], true)) {
                     throw new \InvalidArgumentException('no se puede asignar un acontecimiento con evidencia insuficiente');
                 }
                 $assignment = (new EditorialAssignment())

@@ -150,11 +150,35 @@ export async function runEditorial({
       return await finish('incomplete', `solo ${candidates.length} acontecimientos candidatos para ${target} debates`);
     }
 
+    // Personajes y plan del día: se usan al tirar de la reserva y al asignar.
+    const personas = await api.personas();
+    const personaById = new Map(personas.map((p) => [p.id, p]));
+
+    /**
+     * Plan del día en dos pasos: primero actualidad con una medida concreta;
+     * después, a quien se quede sin nada, un debate de fondo sobre un
+     * acontecimiento de su tema que no esté ya en el lote ni sea del mismo asunto.
+     */
+    const planDay = (need, excludePersonas = new Set(), excludeEvents = new Set()) => {
+      const news = assign({ personas, candidates, target: need, rotationLimitDays: config.rotation_limit_days, excludePersonas, excludeEvents });
+      if (news.assignments.length >= need) return news;
+      const takenPersonas = new Set([...excludePersonas, ...news.assignments.map((a) => a.persona_id)]);
+      const takenEvents = new Set([...excludeEvents, ...news.assignments.map((a) => a.event_id)]);
+      const takenCandidates = candidates.filter((c) => takenEvents.has(c.event_id));
+      const free = candidates.filter((c) => !takenEvents.has(c.event_id) && !takenCandidates.some((t) => sameArea(t, c)));
+      const extra = assign({
+        personas, candidates: free, target: need - news.assignments.length, rotationLimitDays: config.rotation_limit_days,
+        excludePersonas: takenPersonas, background: true,
+      });
+      return { assignments: [...news.assignments, ...extra.assignments], exceptions: extra.exceptions, alternatives: news.alternatives };
+    };
+
+
     // 4. Dossier: una llamada por candidato como mucho, o caché. Si no salen
     // bastantes con evidencia suficiente, se tira de la reserva, con tope.
     let budgetNote = null;
     await stage('dossier', async () => {
-      const counters = { cached: 0, built: 0, ok: 0, insufficient: 0, failed: 0, from_reserve: 0 };
+      const counters = { cached: 0, built: 0, ok: 0, background: 0, insufficient: 0, failed: 0, from_reserve: 0 };
       const insufficient = [];
       const process = (batch) => pool(batch, limits.llmConcurrency, async (c) => {
         if (budgetNote) return;
@@ -162,7 +186,7 @@ export async function runEditorial({
           const { dossier, cached } = await buildDossier({ event: c, articles: articlesByEvent.get(c.event_id) ?? [], limits, llm, api });
           c.dossier = dossier;
           counters[cached ? 'cached' : 'built']++;
-          counters[dossier.status === 'ok' ? 'ok' : 'insufficient']++;
+          counters[dossier.status] = (counters[dossier.status] ?? 0) + 1;
           if (dossier.status !== 'ok') insufficient.push({ title: c.title, reason: dossier.data?.insufficient_reason });
         } catch (err) {
           if (err instanceof BudgetExceeded) { budgetNote = err.message; return; }
@@ -175,8 +199,7 @@ export async function runEditorial({
       // Se sigue con la reserva mientras no haya objetivo + 1 dossiers válidos o
       // mientras con ellos no salgan `target` parejas asignables (el encaje por
       // especialidad y la regla de un asunto por día descartan algunos).
-      const personasNow = await api.personas();
-      const assignable = () => assign({ personas: personasNow, candidates, target, rotationLimitDays: config.rotation_limit_days }).assignments.length;
+      const assignable = () => planDay(target).assignments.length;
       while ((counters.ok < target + 1 || assignable() < target) && reserve.length && counters.built < limits.maxDossiers && !budgetNote) {
         const batch = reserve.splice(0, Math.min(4, limits.maxDossiers - counters.built));
         candidates.push(...batch);
@@ -187,18 +210,13 @@ export async function runEditorial({
     });
 
     // 5. Asignación
-    const personas = await api.personas();
-    const personaById = new Map(personas.map((p) => [p.id, p]));
     let plan;
     await stage('assign', async () => {
       const existing = (await api.run(runId)).assignments;
       if (existing.length) {
         // Reanudación: se conservan las asignaciones vivas y se completan las que falten.
         const active = existing.filter((a) => a.status !== 'rejected');
-        const fresh = assign({
-          personas, candidates, target: Math.max(0, target - active.length), rotationLimitDays: config.rotation_limit_days,
-          excludePersonas: new Set(active.map((a) => a.persona_id)), excludeEvents: new Set(active.map((a) => a.event_id)),
-        });
+        const fresh = planDay(Math.max(0, target - active.length), new Set(active.map((a) => a.persona_id)), new Set(active.map((a) => a.event_id)));
         let nextSlot = Math.max(...existing.map((a) => a.slot)) + 1;
         const added = fresh.assignments.length
           ? await api.saveAssignments(runId, fresh.assignments.map((a) => ({ ...a, slot: nextSlot++, status: 'planned' })))
@@ -210,7 +228,7 @@ export async function runEditorial({
         plan = { assignments: [...active, ...added], exceptions: fresh.exceptions, alternatives: allPairs };
         return { reused: active.length, added: added.length, exceptions: plan.exceptions };
       }
-      plan = assign({ personas, candidates, target, rotationLimitDays: config.rotation_limit_days });
+      plan = planDay(target);
       const saved = await api.saveAssignments(runId, plan.assignments.map((a, slot) => ({ ...a, slot, status: 'planned' })));
       plan.assignments = saved;
       return {
@@ -239,12 +257,14 @@ export async function runEditorial({
         if (a.status === 'validated' || a.status === 'published') return;
         const candidate = candidateByEvent.get(a.event_id);
         const dossier = candidate?.dossier;
-        if (!dossier || dossier.status !== 'ok') {
+        const kind = a.scores?.kind === 'fondo' ? 'fondo' : 'actualidad';
+        const usableDossier = dossier && (dossier.status === 'ok' || (kind === 'fondo' && dossier.status === 'background'));
+        if (!usableDossier) {
           a.status = 'rejected';
           a.rejection_reason = 'dossier no disponible en esta ejecución';
           await api.saveAssignments(runId, [{ slot: a.slot, status: 'rejected', rejection_reason: a.rejection_reason }]);
         } else {
-          const result = await generateDebate({ assignment: a, dossier, persona: personaById.get(a.persona_id), llm, limits });
+          const result = await generateDebate({ assignment: a, dossier, persona: personaById.get(a.persona_id), llm, limits, kind });
           a.status = result.status;
           a.rejection_reason = result.reason ?? null;
           await api.saveAssignments(runId, [{ slot: a.slot, status: result.status, draft: result.draft, review: result.review, rejection_reason: result.reason ?? null }]);

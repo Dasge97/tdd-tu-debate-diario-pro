@@ -68,8 +68,12 @@ function rotationScore(persona, rotationLimitDays) {
  * @param {Set<number>} [p.excludeEvents]
  * @returns {{assignments: object[], exceptions: string[], alternatives: object[]}}
  */
-export function assign({ personas, candidates, target, rotationLimitDays, excludePersonas = new Set(), excludeEvents = new Set() }) {
-  const usable = candidates.filter((c) => c.dossier?.status === 'ok' && !excludeEvents.has(c.event_id));
+export function assign({ personas, candidates, target, rotationLimitDays, excludePersonas = new Set(), excludeEvents = new Set(), background = false }) {
+  // Actualidad: solo dossiers con medida concreta. Fondo: también los que solo
+  // plantean una cuestión general de su tema.
+  const allowed = background ? ['ok', 'background'] : ['ok'];
+  const usable = candidates.filter((c) => allowed.includes(c.dossier?.status) && !excludeEvents.has(c.event_id)
+    && (!background || (c.dossier.data?.background_proposals ?? []).length > 0));
   const people = personas.filter((p) => !excludePersonas.has(p.id));
 
   const pairs = [];
@@ -114,8 +118,9 @@ export function assign({ personas, candidates, target, rotationLimitDays, exclud
     persona_username: b.persona.username,
     event_id: b.candidate.event_id,
     dossier_id: b.candidate.dossier.id,
-    scores: { total: round(b.score), fit: round(b.fit), quality: round(b.quality), rotation: round(b.rotation) },
+    scores: { total: round(b.score), fit: round(b.fit), quality: round(b.quality), rotation: round(b.rotation), ...(background ? { kind: 'fondo' } : {}) },
     reasons: [
+      ...(background ? ['debate de fondo: hoy no había actualidad con una medida concreta para este personaje'] : []),
       `encaje con ${b.persona.specialty}: ${round(b.fit)}`,
       `calidad del acontecimiento: ${round(b.quality)}`,
       b.persona.days_since === null ? 'nunca ha publicado' : `${b.persona.days_since} días desde su último debate`,

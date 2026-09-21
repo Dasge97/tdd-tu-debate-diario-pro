@@ -1,11 +1,19 @@
 import { extractJson } from './llm.js';
 import { LIMITS, validateDraft } from './validate.js';
 
-export const GENERATE_PROMPT_VERSION = 'generate-v4';
-export const REVIEW_PROMPT_VERSION = 'review-v4';
+export const GENERATE_PROMPT_VERSION = 'generate-v5';
+export const REVIEW_PROMPT_VERSION = 'review-v5';
+
+/** Instrucciones añadidas cuando el personaje no tiene hoy actualidad con una medida concreta. */
+const FONDO_RULES = `DEBATE DE FONDO
+- Hoy no hay una medida concreta: la pregunta trata una de las cuestiones generales de la lista.
+- El contexto parte de la noticia (qué ha pasado, con sus fuentes) y explica por qué plantea esa cuestión.
+- No presentes la cuestión como si alguien la hubiera propuesto, anunciado o aprobado si no consta en los hechos.
+- Mismas reglas de neutralidad: la pregunta no presupone la respuesta.
+`;
 
 /** El dossier en el formato que ve el modelo: solo hechos, declaraciones y lo que falta por saber. */
-function dossierForPrompt(dossier) {
+function dossierForPrompt(dossier, kind = 'actualidad') {
   const d = dossier.data;
   const lines = [];
   lines.push(`Titular neutral: ${d.headline}`);
@@ -28,8 +36,13 @@ function dossierForPrompt(dossier) {
     lines.push('AÚN NO SE SABE:');
     d.unknowns.forEach((u) => lines.push(`- ${u}`));
   }
-  lines.push('PROPUESTAS O DECISIONES SOBRE LAS QUE SE PUEDE VOTAR:');
-  d.debatable_proposals.forEach((p, i) => lines.push(`${i + 1}. ${p.proposal}${p.who_decides ? ` (decide: ${p.who_decides})` : ''} [${p.refs.join(',')}]`));
+  if (kind === 'fondo') {
+    lines.push('CUESTIONES GENERALES QUE PLANTEA LA NOTICIA (debate de fondo, no son medidas anunciadas):');
+    (d.background_proposals ?? []).forEach((p, i) => lines.push(`${i + 1}. ${p.proposal} [${p.refs.join(',')}]`));
+  } else {
+    lines.push('PROPUESTAS O DECISIONES SOBRE LAS QUE SE PUEDE VOTAR:');
+    d.debatable_proposals.forEach((p, i) => lines.push(`${i + 1}. ${p.proposal}${p.who_decides ? ` (decide: ${p.who_decides})` : ''} [${p.refs.join(',')}]`));
+  }
   lines.push('FUENTES:');
   dossier.evidence.forEach((e) => lines.push(`[${e.id}] ${e.source} — ${e.title}`));
   return lines.join('\n');
@@ -41,7 +54,7 @@ function dossierForPrompt(dossier) {
  * De la ficha del personaje solo se usan nombre, especialidad y rasgos de
  * estilo; ni bio ni "qué representa", que llevan postura.
  */
-export function buildGenerationPrompt(dossier, persona) {
+export function buildGenerationPrompt(dossier, persona, kind = 'actualidad') {
   const [tMin, tMax] = LIMITS.title;
   const [qMin, qMax] = LIMITS.question;
   const [sMin, sMax] = LIMITS.card_summary;
@@ -76,15 +89,15 @@ FORMATO
 Rasgos de estilo: ${(persona.traits ?? []).join(', ') || 'sobrio'}
 
 DOSSIER
-${dossierForPrompt(dossier)}
-
+${dossierForPrompt(dossier, kind)}
+${kind === 'fondo' ? FONDO_RULES : ''}
 Devuelve:
 {"title": "¿...?", "question": "¿...?", "card_summary": "...", "context": "...", "used_refs": ["E1"], "primary_ref": "E1"}`;
 
   return { system, user };
 }
 
-export function buildReviewPrompt(dossier, draft) {
+export function buildReviewPrompt(dossier, draft, kind = 'actualidad') {
   const system = `Eres el editor de verificación de un medio neutral. Compruebas un borrador contra el dossier de hechos del que sale. No reescribes: decides si se puede publicar.
 
 Suspende el borrador si:
@@ -97,8 +110,8 @@ Suspende el borrador si:
 Responde solo con JSON válido.`;
 
   const user = `DOSSIER
-${dossierForPrompt(dossier)}
-
+${dossierForPrompt(dossier, kind)}
+${kind === 'fondo' ? 'Es un debate de fondo: la pregunta trata una cuestión general que plantea la noticia, no una medida anunciada. No la suspendas por eso, pero sí si presenta la cuestión como si alguien la hubiera propuesto o aprobado.\n' : ''}
 BORRADOR
 title: ${draft.title}
 question: ${draft.question}
@@ -148,8 +161,8 @@ export function parseReview(raw) {
  * o la revisión, con los problemas encontrados. Devuelve el borrador aprobado
  * o el motivo del rechazo.
  */
-export async function generateDebate({ assignment, dossier, persona, llm, limits, stage = 'generate' }) {
-  const prompt = buildGenerationPrompt(dossier, persona);
+export async function generateDebate({ assignment, dossier, persona, llm, limits, stage = 'generate', kind = 'actualidad' }) {
+  const prompt = buildGenerationPrompt(dossier, persona, kind);
   const evidenceUrls = dossier.evidence.map((e) => e.url);
   let feedback = [];
   let lastDraft = null;
@@ -179,7 +192,7 @@ export async function generateDebate({ assignment, dossier, persona, llm, limits
       continue;
     }
 
-    const review = buildReviewPrompt(dossier, draft);
+    const review = buildReviewPrompt(dossier, draft, kind);
     const reviewed = await llm.complete({
       system: review.system, user: review.user, stage, purpose: 'review',
       reference: ref, promptVersion: REVIEW_PROMPT_VERSION, attempt,

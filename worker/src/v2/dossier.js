@@ -2,7 +2,7 @@ import { truncate } from './text.js';
 import { extractJson } from './llm.js';
 import { TOPIC_LEXICON } from './topics.js';
 
-export const DOSSIER_PROMPT_VERSION = 'dossier-v4';
+export const DOSSIER_PROMPT_VERSION = 'dossier-v5';
 const SPECIALTIES = Object.keys(TOPIC_LEXICON);
 
 /** Mínimos para considerar que hay base suficiente para redactar un debate. */
@@ -59,6 +59,7 @@ REGLAS
 - Si las fuentes discrepan, recógelo en "discrepancies". Lo que no se sabe todavía va en "unknowns".
 - "debatable_proposals": medidas concretas que aparecen en la evidencia y sobre las que se puede estar a favor, en contra o neutral: algo que se ha aprobado, anunciado, propuesto, pedido o criticado. Valen, por ejemplo, una sanción impuesta, una ley, un plan, un recorte, una subida, una petición de un partido o de un colectivo. Escríbelas sin presuponer la respuesta. Si la evidencia no contiene ninguna medida (una previsión del tiempo, una cotización, un descubrimiento sin decisión asociada), lista vacía.
 - Excepción: en un caso judicial no es una medida votable lo que afecta a una persona concreta (su culpabilidad, su juicio o las diligencias de su causa).
+- "background_proposals": aunque no haya ninguna medida concreta, cuestiones generales de interés público que la noticia plantea directamente y sobre las que se puede estar a favor, en contra o neutral (por ejemplo, ante un avance médico: que la sanidad pública financie ese tratamiento). Tienen que salir del tema de la noticia, sin dar por ciertos datos que no estén en la evidencia. Si no hay ninguna razonable, lista vacía.
 - Si solo hay titulares o extractos que no permiten redactar con rigor, devuelve "status": "insufficient" y explica por qué.
 - "specialty_fit": de 0 a 1, cuánto encaja el acontecimiento con cada especialidad. Ética y filosofía pueden encajar si el acontecimiento plantea implicaciones morales o de fondo, aunque no sea una noticia de esa sección.
 - Responde solo con JSON válido, en español.`;
@@ -83,6 +84,7 @@ FORMATO DE RESPUESTA
   "discrepancies": [{"topic": "sobre qué", "versions": [{"text": "versión", "refs": ["E1"]}]}],
   "unknowns": ["lo que aún no se sabe"],
   "debatable_proposals": [{"proposal": "decisión concreta", "who_decides": "quién", "refs": ["E1"]}],
+  "background_proposals": [{"proposal": "cuestión general votable", "refs": ["E1"]}],
   "specialty_fit": {${SPECIALTIES.map((s) => `"${s}": 0`).join(', ')}},
   "spain_relevance": 0,
   "public_interest": 0
@@ -149,9 +151,17 @@ export function parseDossier(raw, evidence) {
     status = 'insufficient';
     insufficientReason = `solo ${facts.length} hechos con evidencia (mínimo ${DOSSIER_MINIMUMS.facts})`;
   }
+  // Sin medida concreta pero con hechos y una cuestión general: vale solo para
+  // un debate de fondo de un personaje que hoy no tenga actualidad de su tema.
+  const backgroundProposals = withRefs(data.background_proposals, 'proposal');
   if (status === 'ok' && proposals.length < DOSSIER_MINIMUMS.proposals) {
-    status = 'insufficient';
-    insufficientReason = 'no hay ninguna decisión o propuesta concreta sobre la que votar';
+    if (backgroundProposals.length) {
+      status = 'background';
+      insufficientReason = 'sin medida concreta: solo sirve para un debate de fondo';
+    } else {
+      status = 'insufficient';
+      insufficientReason = 'no hay ninguna decisión o propuesta concreta sobre la que votar';
+    }
   }
 
   return {
@@ -170,6 +180,7 @@ export function parseDossier(raw, evidence) {
         discrepancies,
         unknowns: Array.isArray(data.unknowns) ? data.unknowns.map(String).slice(0, 10) : [],
         debatable_proposals: proposals,
+        background_proposals: backgroundProposals,
         specialty_fit: fit,
         spain_relevance: clamp01(data.spain_relevance),
         public_interest: clamp01(data.public_interest),
