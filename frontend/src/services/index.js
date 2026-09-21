@@ -71,6 +71,8 @@ export const usersService = {
 
 export const personasService = {
   list: () => api.get(endpoints.personas).then((r) => r.data),
+  /** Ficha de un personaje; se puede leer sin sesión. */
+  get: (username) => api.get(endpoints.persona(username)).then((r) => r.data),
   debates: (username, page = 1) =>
     api.get(endpoints.personaDebates(username), { params: { page } }).then((r) => r.data)
 };

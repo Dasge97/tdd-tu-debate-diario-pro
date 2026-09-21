@@ -2,13 +2,16 @@
 import { ref, watch } from "vue";
 import HojaInferior from "@/components/HojaInferior.vue";
 import UserAvatar from "@/components/UserAvatar.vue";
-import { usersService } from "@/services";
+import { personasService, usersService } from "@/services";
+import { nombreVisible } from "@/utils/format";
 
 /** Ficha del personaje sin salir del debate que se esta leyendo. */
 
 const props = defineProps({
   abierta: { type: Boolean, default: false },
-  username: { type: String, default: "" }
+  username: { type: String, default: "" },
+  /** Los personajes se leen por su ruta pública, que no pide sesión. */
+  esPersonaje: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(["cerrar"]);
@@ -23,7 +26,9 @@ watch(
 
     cargando.value = true;
     try {
-      persona.value = await usersService.byUsername(props.username);
+      persona.value = props.esPersonaje
+        ? await personasService.get(props.username)
+        : await usersService.byUsername(props.username);
     } catch (_) {
       persona.value = null;
     } finally {
@@ -39,14 +44,17 @@ watch(
 
     <div v-else-if="persona" style="text-align: center">
       <UserAvatar :user="persona" size="lg" />
-      <h2 style="margin-top: 12px; font-size: 1.2rem">{{ persona.username }}</h2>
+      <h2 style="margin-top: 12px; font-size: 1.2rem">{{ nombreVisible(persona) }}</h2>
+      <div v-if="persona.personaTitle" class="titulo" :style="{ '--persona-color': persona.personaColor }">
+        {{ persona.personaTitle }}
+      </div>
 
       <div v-if="persona.isAiPersona" style="margin-top: 6px">
         <span class="ia-chip">PERSONAJE IA</span>
       </div>
 
-      <p v-if="persona.profileTagline" class="text-muted" style="margin: 10px 0 0">
-        {{ persona.profileTagline }}
+      <p v-if="persona.profileTagline" class="text-muted" style="margin: 10px 0 0; font-style: italic">
+        “{{ persona.profileTagline }}”
       </p>
 
       <p v-if="persona.bio" style="margin: 12px 0 0; line-height: 1.6; color: #51453b">
@@ -76,6 +84,13 @@ watch(
 </template>
 
 <style scoped>
+.titulo {
+  margin-top: 2px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--persona-color, var(--tdd-muted)) 62%, var(--tdd-ink));
+}
+
 .rasgos {
   display: flex;
   flex-wrap: wrap;

@@ -460,6 +460,16 @@ h4 {
   font-size: 1.6rem;
 }
 
+/* Anillo con el color propio del personaje, separado de la foto por un
+   hueco del color de fondo para que no se funda con ella. */
+.avatar-persona {
+  box-shadow: 0 0 0 2px var(--tdd-surface), 0 0 0 4px var(--persona-color);
+}
+
+.avatar-sm.avatar-persona {
+  box-shadow: 0 0 0 1.5px var(--tdd-surface), 0 0 0 3px var(--persona-color);
+}
+
 .meta-pill {
   display: inline-flex;
   align-items: center;
@@ -2104,8 +2114,8 @@ h4 {
   cursor: pointer;
 }
 
-/* Anillo fino alrededor del avatar. Se pinta en el azul de marca cuando el
-   personaje esta elegido, y en el tono del papel cuando no. */
+/* Anillo fino alrededor del avatar, en el color del personaje (o el azul de
+   marca en "Todos"). Se engorda cuando el personaje esta elegido. */
 .personaje-anillo {
   display: flex;
   align-items: center;
@@ -2113,7 +2123,7 @@ h4 {
   width: 62px;
   height: 62px;
   border-radius: 50%;
-  border: 1.5px solid var(--tdd-line);
+  border: 1.5px solid var(--persona-color, var(--tdd-line));
   background: var(--tdd-surface);
   transition: border-color 0.18s ease, transform 0.14s ease, box-shadow 0.18s ease;
 }
@@ -2124,14 +2134,19 @@ h4 {
   font-size: 1.1rem;
 }
 
+/* El anillo de la fila ya lleva el color; el del avatar sobraria. */
+.personaje-anillo .avatar-persona {
+  box-shadow: none;
+}
+
 .personaje-burbuja:active .personaje-anillo {
   transform: scale(0.94);
 }
 
 .personaje-burbuja.is-activa .personaje-anillo {
-  border-color: var(--tdd-primary);
+  border-color: var(--persona-color, var(--tdd-primary));
   border-width: 2px;
-  box-shadow: 0 0 0 3px rgba(31, 75, 163, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--persona-color, var(--tdd-primary)) 18%, transparent);
 }
 
 .personaje-todos {

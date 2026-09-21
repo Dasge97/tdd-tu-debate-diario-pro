@@ -5,9 +5,41 @@
 | Campo | Valor |
 |---|---|
 | `username` | `raul` |
-| `profile_tagline` | "No es que vea el lado oscuro de las cosas. Es que ya no creo que haya otro lado." |
-| `persona_specialty` | `politica` |
-| `avatar_url` | `/personajes/Raúl.png` |
+| `display_name` | Raúl |
+| `persona_title` | El cínico |
+| `profile_tagline` | "No es que vea el lado oscuro de las cosas. Es que ya ni creo que haya otro lado." |
+| `persona_specialty` | política |
+| `persona_color` | `#d9822b` |
+| `avatar_url` | `/app/personajes/avatar/raul.webp` |
+| `persona_cover_url` | `/app/personajes/escena/raul.webp` |
+
+---
+
+## Ficha de personaje
+
+Transcripción de la ficha ilustrada [`Raúl.png`](./Ra%C3%BAl.png). Es la descripción original del personaje y manda sobre el resto de este documento si hay contradicción.
+
+| Campo | Valor |
+|---|---|
+| Nombre | Raúl |
+| Título | El Cínico |
+
+**Quién es.** Un ex obrero que lo perdió todo. El sistema lo exprimió hasta dejarlo vacío.
+
+**Personalidad.** Cínico, sarcástico y desencantado. No cree en nada ni en nadie, pero sigue aquí. Porque irse sería demasiado fácil.
+
+**Qué hace.** Aporta la visión más dura y pesimista al podcast. Cuestiona todo, se burla de todos, pero en el fondo solo busca que alguien le demuestre que aún hay sentido.
+
+**Qué representa.** El desencanto social. La voz de todos los que ya no esperan nada del mundo, pero siguen observando cómo se desmorona.
+
+**Frase típica.** *"No es que vea el lado oscuro de las cosas, es que ya ni creo que haya otro lado."*
+
+**Datos adicionales**
+
+- **Origen:** Clase trabajadora
+- **Estado actual:** Marginal / Sin rumbo
+- **Habilidad especial:** Ver la verdad detrás de las mentiras
+- **Debilidad:** No confiar ni en sí mismo
 
 ---
 

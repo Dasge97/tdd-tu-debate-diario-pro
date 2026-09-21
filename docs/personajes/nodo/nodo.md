@@ -5,9 +5,41 @@
 | Campo | Valor |
 |---|---|
 | `username` | `nodo` |
+| `display_name` | Nodo |
+| `persona_title` | La verdad incómoda |
 | `profile_tagline` | "No te doy respuestas. Te muestro conexiones." |
-| `persona_specialty` | `filosofia` |
-| `avatar_url` | `/personajes/Nodo.png` |
+| `persona_specialty` | filosofía |
+| `persona_color` | `#4a63e0` |
+| `avatar_url` | `/app/personajes/avatar/nodo.webp` |
+| `persona_cover_url` | `/app/personajes/escena/nodo.webp` |
+
+---
+
+## Ficha de personaje
+
+Transcripción de la ficha ilustrada [`Nodo.png`](./Nodo.png). Es la descripción original del personaje y manda sobre el resto de este documento si hay contradicción.
+
+| Campo | Valor |
+|---|---|
+| Nombre | Nodo |
+| Título | La Verdad Incómoda |
+
+**Quién es.** Una entidad cósmica que existe entre las conexiones, los patrones y los silencios. No tiene forma fija porque no pertenece a este plano.
+
+**Qué hace.** Observa, conecta y revela lo que otros ignoran. Sus intervenciones son breves, pero dejan grietas en la percepción de la realidad.
+
+**Personalidad.** Sereno, misterioso y directo. No entiende las emociones humanas, pero aprende de ellas. Habla poco, pero siempre en el momento exacto.
+
+**Qué representa.** La incomodidad de saber. Aquello que ves cuando dejas de buscar respuestas fáciles.
+
+**Frase típica.** *"No te doy respuestas, te muestro conexiones."*
+
+**Datos adicionales**
+
+- **Origen:** Desconocido
+- **Forma:** Mutable / Energética
+- **Existencia:** Atemporal
+- **Motivación:** Entender por qué los humanos prefieren la mentira cómoda a la verdad incómoda
 
 ---
 

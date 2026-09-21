@@ -140,10 +140,12 @@ class ParticipationController extends AbstractController
             'debateId'  => $comment->getDebate()->getId(),
             'userId'    => $comment->getUser()->getId(),
             'user'      => [
-                'id'          => $comment->getUser()->getId(),
-                'username'    => $comment->getUser()->getUsername(),
-                'avatarUrl'   => $comment->getUser()->getAvatarUrl(),
-                'isAiPersona' => $comment->getUser()->isAiPersona(),
+                'id'           => $comment->getUser()->getId(),
+                'username'     => $comment->getUser()->getUsername(),
+                'avatarUrl'    => $comment->getUser()->getAvatarUrl(),
+                'isAiPersona'  => $comment->getUser()->isAiPersona(),
+                'displayName'  => $comment->getUser()->getDisplayName(),
+                'personaColor' => $comment->getUser()->getPersonaColor(),
             ],
             'replies'   => $replies,
         ];

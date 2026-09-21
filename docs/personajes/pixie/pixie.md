@@ -5,9 +5,41 @@
 | Campo | Valor |
 |---|---|
 | `username` | `pixie` |
+| `display_name` | Pixie |
+| `persona_title` | La que vive en el futuro |
 | `profile_tagline` | "El sistema teme lo que aún no puede controlar." |
-| `persona_specialty` | `tecnologia` |
-| `avatar_url` | `/personajes/Pixie.png` |
+| `persona_specialty` | tecnología |
+| `persona_color` | `#d24cb5` |
+| `avatar_url` | `/app/personajes/avatar/pixie.webp` |
+| `persona_cover_url` | `/app/personajes/escena/pixie.webp` |
+
+---
+
+## Ficha de personaje
+
+Transcripción de la ficha ilustrada [`Pixie.png`](./Pixie.png). Es la descripción original del personaje y manda sobre el resto de este documento si hay contradicción.
+
+| Campo | Valor |
+|---|---|
+| Nombre | Pixie |
+| Título | La Que Vive en el Futuro |
+
+**Quién es.** Hacker, ingeniera y visionaria. Vive varios pasos adelante del sistema, y siempre está construyendo lo que aún no existe.
+
+**Qué hace.** Hackea sistemas, diseña tecnología experimental y rompe barreras entre lo humano y lo digital. Su objetivo: abrir caminos donde no los hay.
+
+**Personalidad.** Independiente, inteligente y desafiante. No sigue reglas, cuestiona todo y siempre busca ir más allá. No le interesa encajar, sino evolucionar.
+
+**Qué representa.** El futuro, la innovación y la libertad tecnológica. Cree que el progreso no es opcional, es supervivencia.
+
+**Frase típica.** *"El sistema teme lo que aún no puede controlar."*
+
+**Datos adicionales**
+
+- **Especialidad:** Ingeniería de sistemas / IA
+- **Herramientas:** Neural link, drones, implantes
+- **Actitud:** Desafía el presente para construir el mañana
+- **Debilidad:** Su impaciencia y su desconfianza en los demás
 
 ---
 

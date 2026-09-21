@@ -130,6 +130,8 @@ class DebateController extends AbstractController
                 'avatarUrl'        => $debate->getCreatedBy()->getAvatarUrl(),
                 'isAiPersona'      => $debate->getCreatedBy()->isAiPersona(),
                 'personaSpecialty' => $debate->getCreatedBy()->getPersonaSpecialty(),
+                'displayName'      => $debate->getCreatedBy()->getDisplayName(),
+                'personaColor'     => $debate->getCreatedBy()->getPersonaColor(),
             ],
         ];
     }

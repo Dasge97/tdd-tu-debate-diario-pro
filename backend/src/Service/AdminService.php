@@ -286,6 +286,11 @@ class AdminService
             throw new \RuntimeException('Personaje IA no encontrado');
         }
 
+        if (isset($data['displayName']))     { $persona->setDisplayName($data['displayName']); }
+        if (isset($data['personaTitle']))    { $persona->setPersonaTitle($data['personaTitle']); }
+        if (isset($data['personaColor']) && preg_match('/^#[0-9a-fA-F]{6}$/', $data['personaColor'])) {
+            $persona->setPersonaColor(strtolower($data['personaColor']));
+        }
         if (isset($data['bio']))             { $persona->setBio($data['bio']); }
         if (isset($data['profileTagline']))  { $persona->setProfileTagline($data['profileTagline']); }
         if (isset($data['personaSpecialty'])) { $persona->setPersonaSpecialty($data['personaSpecialty']); }

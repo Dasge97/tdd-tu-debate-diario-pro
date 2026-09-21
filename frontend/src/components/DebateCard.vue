@@ -8,7 +8,7 @@ import HojaPosicion from "@/components/HojaPosicion.vue";
 import HojaOpcionesDebate from "@/components/HojaOpcionesDebate.vue";
 import HojaPersonaje from "@/components/HojaPersonaje.vue";
 import { useDebatesStore } from "@/stores/debates";
-import { plural } from "@/utils/format";
+import { nombreVisible, plural } from "@/utils/format";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useUiStore } from "@/stores/ui";
 import { useSesion } from "@/composables/useSesion";
@@ -111,7 +111,7 @@ const dobleToque = async () => {
       >
         <UserAvatar :user="author" size="sm" />
         <span style="min-width: 0; text-align: left">
-          <span class="debate-author-name">{{ author.username }}</span>
+          <span class="debate-author-name">{{ nombreVisible(author) }}</span>
           <span v-if="author.personaSpecialty" class="debate-author-tag">
             · {{ author.personaSpecialty }}
           </span>
@@ -200,6 +200,7 @@ const dobleToque = async () => {
     <HojaPersonaje
       :abierta="hoja === 'personaje'"
       :username="author?.username || ''"
+      :es-personaje="!!author?.isAiPersona"
       @cerrar="hoja = null"
     />
   </article>

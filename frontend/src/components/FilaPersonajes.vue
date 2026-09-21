@@ -2,6 +2,7 @@
 import { onMounted } from "vue";
 import UserAvatar from "@/components/UserAvatar.vue";
 import { useUsersStore } from "@/stores/users";
+import { nombreVisible } from "@/utils/format";
 
 /**
  * Fila de personajes en circulo, arriba del feed.
@@ -51,12 +52,13 @@ const alPulsar = (username) => {
       :class="{ 'is-activa': activo === persona.username }"
       role="tab"
       :aria-selected="activo === persona.username"
+      :style="persona.personaColor ? { '--persona-color': persona.personaColor } : null"
       @click="alPulsar(persona.username)"
     >
       <span class="personaje-anillo">
         <UserAvatar :user="persona" />
       </span>
-      <span class="personaje-nombre">{{ persona.username }}</span>
+      <span class="personaje-nombre">{{ nombreVisible(persona) }}</span>
     </button>
 
     <div v-if="users.loadingPersonas && !users.personas.length" class="personajes-cargando">

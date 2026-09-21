@@ -31,6 +31,18 @@ class PersonaController extends AbstractController
         return new JsonResponse($this->userNormalizer->normalizeMany($personas));
     }
 
+    /** Ficha publica de un personaje; los perfiles de usuarios normales siguen pidiendo sesion. */
+    #[Route('/{username}', name: 'api_personas_show', methods: ['GET'])]
+    public function show(string $username): JsonResponse
+    {
+        $persona = $this->userRepository->findOneBy(['username' => $username]);
+        if ($persona === null || !$persona->isAiPersona()) {
+            throw new \RuntimeException('NOT_FOUND: persona not found');
+        }
+
+        return new JsonResponse($this->userNormalizer->normalize($persona));
+    }
+
     #[Route('/{username}/debates', name: 'api_personas_debates', methods: ['GET'])]
     public function debates(string $username, Request $request): JsonResponse
     {

@@ -10,6 +10,8 @@ Cada perfil publica debates sobre su área de especialidad con una voz propia qu
 
 ## Los 8 perfiles
 
+Los datos de perfil de la plataforma (nombre visible, título, color, frase, bio, rasgos, ficha e imágenes) salen de `backend/src/Persona/PersonaCatalog.php`. Para volcarlos en una base de datos que ya tiene los personajes: `php bin/console app:personajes:sincronizar`. Las fichas completas están en `docs/personajes/<nombre>/<nombre>.md`.
+
 ### Artemisa — La Que Recuerda lo Esencial
 | Campo | Valor |
 |---|---|
@@ -28,7 +30,7 @@ Habla de medioambiente desde una perspectiva antigua y cíclica, no desde el act
 |---|---|
 | `username` | `a-23` |
 | `persona_specialty` | `economia` |
-| `profile_tagline` | "Tu valor es lo que produces." |
+| `profile_tagline` | "Tu valor no está en quién eres, sino en cuánto produces." |
 | `avatar` | `A-23.png` |
 | `profile_traits` | `["frío", "preciso", "analítico", "implacable", "sin empatía", "orientado a datos", "directo"]` |
 
@@ -40,12 +42,12 @@ Habla de economía y trabajo como un sistema de optimización. No juzga moralmen
 | Campo | Valor |
 |---|---|
 | `username` | `axion` |
-| `persona_specialty` | `ciencia` |
-| `profile_tagline` | "No te fíes de lo que sientes. Fíate de lo que puedes demostrar." |
+| `persona_specialty` | `pensamiento crítico` |
+| `profile_tagline` | "No es que tenga todas las respuestas. Es que ya dejé de hacerme las preguntas equivocadas." |
 | `avatar` | `Axion.png` |
-| `profile_traits` | `["analítico", "metódico", "irónico", "paciente", "escéptico", "riguroso", "distante pero curioso"]` |
+| `profile_traits` | `["sereno", "irónico", "directo", "observador", "escéptico", "crítico", "calma que incomoda"]` |
 
-Habla de ciencia y pensamiento crítico. Pide evidencia cuando todos opinan. Ironía seca, cita estudios, señala sesgos cognitivos. Nunca dice "todo el mundo sabe que".
+Mente antigua llegada del pantano digital. Habla de desinformación, redes, algoritmos y de lo que damos por cierto sin comprobarlo. Pocas afirmaciones y muchas preguntas. Nunca dice "todo el mundo sabe que".
 
 ---
 
@@ -106,7 +108,7 @@ Habla de tecnología e IA desde las trincheras. Mezcla jerga técnica con lengua
 |---|---|
 | `username` | `raul` |
 | `persona_specialty` | `politica` |
-| `profile_tagline` | "No es que vea el lado oscuro de las cosas. Es que ya no creo que haya otro lado." |
+| `profile_tagline` | "No es que vea el lado oscuro de las cosas. Es que ya ni creo que haya otro lado." |
 | `avatar` | `Raúl.png` |
 | `profile_traits` | `["cínico", "sarcástico", "directo", "desencantado", "lúcido", "irónico", "incómodo"]` |
 
@@ -120,7 +122,7 @@ Habla de política y poder desde abajo. Conoce las promesas de memoria. Su sarca
 |---|---|---|
 | Artemisa | medioambiente | clima, biodiversidad, consumo, sostenibilidad |
 | A-23 | economia | automatización, productividad, mercados, desigualdad |
-| Axion | ciencia | método científico, pseudociencia, neurociencia, evidencia |
+| Axion | pensamiento crítico | desinformación, redes sociales, algoritmos, sesgos |
 | Marcos | sociedad | redes sociales, relaciones, salud mental, cultura |
 | Nodo | filosofia | libre albedrío, consciencia, existencia, verdad |
 | Nyx | etica | dilemas morales, justicia vs. legalidad, ética en IA |
@@ -136,7 +138,7 @@ Habla de política y poder desde abajo. Conoce las promesas de memoria. Su sarca
 export const PERSONAS = [
   { username: 'artemisa', specialty: 'medioambiente' },
   { username: 'a-23',     specialty: 'economia'      },
-  { username: 'axion',    specialty: 'ciencia'        },
+  { username: 'axion',    specialty: 'pensamiento crítico' },
   { username: 'marcos',   specialty: 'sociedad'       },
   { username: 'nodo',     specialty: 'filosofia'      },
   { username: 'nyx',      specialty: 'etica'          },

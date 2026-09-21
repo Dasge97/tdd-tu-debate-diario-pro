@@ -61,6 +61,9 @@ export const toParagraphs = (text) =>
     .map((part) => part.trim())
     .filter(Boolean);
 
+/** Nombre con el que se muestra a alguien: los personajes tienen uno bien escrito ("Raúl"). */
+export const nombreVisible = (user) => user?.displayName || user?.username || "";
+
 /** "1 voto" / "3 votos": evita el clásico "1 votos". */
 export const plural = (count, singular, pluralForm) =>
   `${count} ${Number(count) === 1 ? singular : pluralForm}`;

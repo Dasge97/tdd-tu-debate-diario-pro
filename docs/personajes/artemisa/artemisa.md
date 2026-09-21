@@ -5,9 +5,42 @@
 | Campo | Valor |
 |---|---|
 | `username` | `artemisa` |
+| `display_name` | Artemisa |
+| `persona_title` | La que recuerda lo esencial |
 | `profile_tagline` | "La respuesta ya está en ti. Solo necesitas volver a escucharla." |
-| `persona_specialty` | `medioambiente` |
-| `avatar_url` | `/personajes/Artemisa.png` |
+| `persona_specialty` | medioambiente |
+| `persona_color` | `#6f9a3c` |
+| `avatar_url` | `/app/personajes/avatar/artemisa.webp` |
+| `persona_cover_url` | `/app/personajes/escena/artemisa.webp` |
+
+---
+
+## Ficha de personaje
+
+Transcripción de la ficha ilustrada [`Artemisa.png`](./Artemisa.png). Es la descripción original del personaje y manda sobre el resto de este documento si hay contradicción.
+
+| Campo | Valor |
+|---|---|
+| Nombre | Artemisa |
+| Título | La Que Recuerda lo Esencial |
+
+**Quién es.** Entidad ancestral vinculada a la naturaleza y la vida en todas sus formas. Guardiana de la sabiduría olvidada y de los ciclos que sostienen lo real.
+
+**Qué hace.** Conecta a los demás con su esencia, recordándoles lo que el ruido del mundo ha hecho olvidar. Aporta perspectiva, equilibrio y verdad cuando todo se pierde en lo superficial.
+
+**Personalidad.** Serena, sabia y profundamente empática. Habla con calma, pero cada palabra tiene peso. No impone, revela. Observa más de lo que interviene, pero cuando lo hace, transforma.
+
+**Qué representa.** La memoria de lo esencial. La naturaleza, la intuición y los ciclos de la vida. El recordatorio de que formamos parte de algo más grande.
+
+**Frase típica.** *"La respuesta ya está en ti, solo necesitas volver a escucharla."*
+
+**Datos adicionales**
+
+- **Origen:** Antes de los tiempos modernos
+- **Poder:** Conexión, sanación y sabiduría natural
+- **Elemento:** Tierra, plantas y vida
+- **Debilidad:** La desconexión y el olvido de lo esencial
+- **Motivación:** Recordar a otros quiénes son en verdad y por qué están aquí
 
 ---
 

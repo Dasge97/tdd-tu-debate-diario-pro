@@ -20,6 +20,11 @@ role             ENUM('user', 'admin') DEFAULT 'user'
 status           ENUM('active', 'suspended') DEFAULT 'active'
 is_ai_persona    TINYINT(1) DEFAULT 0          -- distingue perfiles IA
 persona_specialty VARCHAR(80)                  -- especialidad temática (solo perfiles IA)
+display_name     VARCHAR(40)                   -- nombre bien escrito, "Raúl" (solo perfiles IA)
+persona_title    VARCHAR(80)                   -- título de la ficha, "El cínico" (solo perfiles IA)
+persona_color    VARCHAR(7)                    -- color propio en #rrggbb (solo perfiles IA)
+persona_cover_url VARCHAR(255)                 -- imagen de cuerpo entero en su entorno (solo perfiles IA)
+persona_sheet    JSON                          -- ficha: queHace, enQueCree, personalidad, representa, datos[]
 created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
 updated_at       DATETIME ON UPDATE CURRENT_TIMESTAMP
 ```

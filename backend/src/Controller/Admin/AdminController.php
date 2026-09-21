@@ -295,6 +295,9 @@ class AdminController extends AbstractController
         $traits    = array_values(array_filter(array_map('trim', explode(',', $traitsRaw))));
 
         $data = [
+            'displayName'      => $request->request->get('displayName'),
+            'personaTitle'     => $request->request->get('personaTitle'),
+            'personaColor'     => $request->request->get('personaColor'),
             'bio'              => $request->request->get('bio'),
             'profileTagline'   => $request->request->get('profileTagline'),
             'personaSpecialty' => $request->request->get('personaSpecialty'),

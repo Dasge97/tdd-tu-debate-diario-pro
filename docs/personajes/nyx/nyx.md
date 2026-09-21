@@ -5,9 +5,41 @@
 | Campo | Valor |
 |---|---|
 | `username` | `nyx` |
+| `display_name` | Nyx |
+| `persona_title` | La abogada del caos |
 | `profile_tagline` | "Las reglas están para los que no saben cómo cambiarlas." |
-| `persona_specialty` | `etica` |
-| `avatar_url` | `/personajes/Nyx.png` |
+| `persona_specialty` | ética |
+| `persona_color` | `#c43b2e` |
+| `avatar_url` | `/app/personajes/avatar/nyx.webp` |
+| `persona_cover_url` | `/app/personajes/escena/nyx.webp` |
+
+---
+
+## Ficha de personaje
+
+Transcripción de la ficha ilustrada [`Nyx.png`](./Nyx.png). Es la descripción original del personaje y manda sobre el resto de este documento si hay contradicción.
+
+| Campo | Valor |
+|---|---|
+| Nombre | Nyx |
+| Título | La Abogada del Caos |
+
+**Quién es.** Abogada infernal especializada en retorcer normas, encontrar vacíos legales y convertir el caos en ventaja.
+
+**Qué hace.** Defiende lo indefendible. Encuentra siempre la letra pequeña que nadie leyó. Su firma convierte el desorden en poder.
+
+**Personalidad.** Carismática, astuta y provocadora. Disfruta del juego mental y de llevar siempre la iniciativa. No sigue las reglas: las reescribe.
+
+**Qué representa.** El caos elegante. La libertad sin límites. La tentación de romper el sistema y salirse con la suya.
+
+**Frase típica.** *"Las reglas están para los que no saben cómo cambiarlas."*
+
+**Datos adicionales**
+
+- **Especialidad:** Derecho infernal y loopholes morales
+- **Arma:** Su intelecto y su lengua afilada
+- **Debilidad:** Le aburre lo predecible
+- **Motivación:** Demostrar que siempre hay una salida... si sabes dónde mirar
 
 ---
 

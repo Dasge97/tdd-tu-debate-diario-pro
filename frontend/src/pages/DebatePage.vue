@@ -12,7 +12,7 @@ import { useFavoritesStore } from "@/stores/favorites";
 import { useUiStore } from "@/stores/ui";
 import { debatesService, participationService } from "@/services";
 import { errorMessage } from "@/api/client";
-import { formatDateTime, plural, toParagraphs } from "@/utils/format";
+import { formatDateTime, nombreVisible, plural, toParagraphs } from "@/utils/format";
 import { useSesion } from "@/composables/useSesion";
 
 const props = defineProps({
@@ -161,7 +161,7 @@ const enviar = async (contenido) => {
             >
               <UserAvatar :user="autor" size="sm" />
               <span style="min-width: 0; text-align: left">
-                <span class="debate-author-name">{{ autor.username }}</span>
+                <span class="debate-author-name">{{ nombreVisible(autor) }}</span>
                 <span v-if="autor.personaSpecialty" class="debate-author-tag">
                   · {{ autor.personaSpecialty }}
                 </span>
@@ -285,6 +285,7 @@ const enviar = async (contenido) => {
         <HojaPersonaje
           :abierta="hoja === 'personaje'"
           :username="autor?.username || ''"
+          :es-personaje="!!autor?.isAiPersona"
           @cerrar="hoja = null"
         />
       </template>

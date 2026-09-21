@@ -176,7 +176,10 @@
             font-family: "Bitter", Georgia, serif; font-weight: 700;
             display: flex; align-items: center; justify-content: center;
             font-size: .85rem;
+            overflow: hidden;
         }
+
+        .preview-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
         .preview-name { font-weight: 600; font-size: .88rem; }
         .preview-tag { font-size: .75rem; color: var(--muted); }
@@ -223,9 +226,16 @@
             font-family: "Bitter", Georgia, serif; font-weight: 700;
             display: flex; align-items: center; justify-content: center;
             margin-bottom: 10px;
+            overflow: hidden;
         }
 
+        .persona-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .persona-avatar.con-foto { width: 56px; height: 56px; border: 2px solid var(--persona-color, #e7e2d8); }
+
         .persona-name { font-weight: 600; font-size: .96rem; }
+
+        .persona-title { font-size: .78rem; color: color-mix(in srgb, var(--persona-color, var(--muted)) 62%, #14171f); font-weight: 600; margin-top: 1px; }
 
         .persona-tag { font-size: .8rem; color: var(--muted); line-height: 1.45; margin-top: 2px; }
 
@@ -365,9 +375,14 @@
     <!-- Muestra de lo que se ve al entrar. -->
     <article class="surface preview" aria-label="Ejemplo de debate">
         <div class="preview-author">
-            <div class="preview-avatar">{{ personas|first ? personas|first.username|first|upper : 'A' }}</div>
+            {% set autor = personas|first %}
+            {% if autor and autor.avatarUrl %}
+                <div class="preview-avatar"><img src="{{ autor.avatarUrl }}" alt="" decoding="async"></div>
+            {% else %}
+                <div class="preview-avatar">{{ autor ? autor.username|first|upper : 'A' }}</div>
+            {% endif %}
             <div>
-                <div class="preview-name">{{ personas|first ? personas|first.username : 'El Analista' }}</div>
+                <div class="preview-name">{{ autor ? (autor.displayName ?? autor.username) : 'El Analista' }}</div>
                 <div class="preview-tag">{{ personas|first and personas|first.personaSpecialty ? personas|first.personaSpecialty : 'Política · Economía' }}</div>
             </div>
         </div>
@@ -443,9 +458,16 @@
 
         <div class="personas">
             {% for persona in personas %}
-                <article class="surface persona">
-                    <div class="persona-avatar">{{ persona.username|first|upper }}</div>
-                    <div class="persona-name">{{ persona.username }}</div>
+                <article class="surface persona"{% if persona.personaColor %} style="--persona-color: {{ persona.personaColor }}"{% endif %}>
+                    {% if persona.avatarUrl %}
+                        <div class="persona-avatar con-foto"><img src="{{ persona.avatarUrl }}" alt="" loading="lazy" decoding="async"></div>
+                    {% else %}
+                        <div class="persona-avatar">{{ persona.username|first|upper }}</div>
+                    {% endif %}
+                    <div class="persona-name">{{ persona.displayName ?? persona.username }}</div>
+                    {% if persona.personaTitle %}
+                        <div class="persona-title">{{ persona.personaTitle }}</div>
+                    {% endif %}
                     <div class="persona-tag">{{ persona.profileTagline ?? persona.personaSpecialty ?? 'Personaje editorial' }}</div>
                     {% if persona.profileTraits is not empty %}
                         <div class="traits">

@@ -61,6 +61,29 @@ class User
     #[ORM\Column(type: 'string', length: 80, nullable: true)]
     private ?string $personaSpecialty = null;
 
+    /** Nombre bien escrito del personaje ("Raúl"); el username va en minúsculas y sin tildes. */
+    #[ORM\Column(type: 'string', length: 40, nullable: true)]
+    private ?string $displayName = null;
+
+    /** Título del personaje en su ficha, por ejemplo "El Cínico". */
+    #[ORM\Column(type: 'string', length: 80, nullable: true)]
+    private ?string $personaTitle = null;
+
+    /** Color propio del personaje en formato #rrggbb. */
+    #[ORM\Column(type: 'string', length: 7, nullable: true)]
+    private ?string $personaColor = null;
+
+    /** Imagen del personaje de cuerpo entero en su entorno. */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $personaCoverUrl = null;
+
+    /**
+     * Resto de la ficha: queHace, enQueCree, personalidad, representa y datos
+     * (lista de {etiqueta, valor}). "Quién es" va en bio.
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $personaSheet = null;
+
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
 
@@ -242,6 +265,61 @@ class User
     public function setPersonaSpecialty(?string $personaSpecialty): static
     {
         $this->personaSpecialty = $personaSpecialty;
+        return $this;
+    }
+
+    public function getDisplayName(): ?string
+    {
+        return $this->displayName;
+    }
+
+    public function setDisplayName(?string $displayName): static
+    {
+        $this->displayName = $displayName;
+        return $this;
+    }
+
+    public function getPersonaTitle(): ?string
+    {
+        return $this->personaTitle;
+    }
+
+    public function setPersonaTitle(?string $personaTitle): static
+    {
+        $this->personaTitle = $personaTitle;
+        return $this;
+    }
+
+    public function getPersonaColor(): ?string
+    {
+        return $this->personaColor;
+    }
+
+    public function setPersonaColor(?string $personaColor): static
+    {
+        $this->personaColor = $personaColor;
+        return $this;
+    }
+
+    public function getPersonaCoverUrl(): ?string
+    {
+        return $this->personaCoverUrl;
+    }
+
+    public function setPersonaCoverUrl(?string $personaCoverUrl): static
+    {
+        $this->personaCoverUrl = $personaCoverUrl;
+        return $this;
+    }
+
+    public function getPersonaSheet(): ?array
+    {
+        return $this->personaSheet;
+    }
+
+    public function setPersonaSheet(?array $personaSheet): static
+    {
+        $this->personaSheet = $personaSheet;
         return $this;
     }
 

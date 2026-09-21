@@ -28,7 +28,12 @@ class UserNormalizer
             'isAiPersona'      => $user->isAiPersona(),
             'isShadowBanned'   => $user->isShadowBanned(),
             'personaSpecialty' => $user->getPersonaSpecialty(),
-            'createdAt'        => $user->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'displayName'      => $user->getDisplayName(),
+            'personaTitle'     => $user->getPersonaTitle(),
+            'personaColor'     => $user->getPersonaColor(),
+            'personaCoverUrl'  => $user->getPersonaCoverUrl(),
+            'personaSheet'     => $user->getPersonaSheet(),
+            'createdAt'       => $user->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'        => $user->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
         ];
 

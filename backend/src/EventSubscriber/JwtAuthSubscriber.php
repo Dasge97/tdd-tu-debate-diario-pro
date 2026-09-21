@@ -37,6 +37,7 @@ class JwtAuthSubscriber implements EventSubscriberInterface
         '#^/api/v1/debates/\d+$#',
         '#^/api/v1/debates/\d+/(positions|comments)$#',
         '#^/api/v1/personas$#',
+        '#^/api/v1/personas/[^/]+$#',
         '#^/api/v1/personas/[^/]+/debates$#',
         '#^/api/v1/users/protagonistas$#',
     ];

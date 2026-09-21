@@ -4,6 +4,7 @@ import UserAvatar from "@/components/UserAvatar.vue";
 import Esqueleto from "@/components/Esqueleto.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useUsersStore } from "@/stores/users";
+import { nombreVisible } from "@/utils/format";
 
 /**
  * Dos listas: los personajes que escriben los debates y las personas de la
@@ -61,10 +62,12 @@ onMounted(() => {
           v-for="persona in users.personas"
           :key="persona.id"
           class="surface persona-card"
+          :style="persona.personaColor ? { '--persona-color': persona.personaColor } : null"
           :to="{ name: 'persona', params: { username: persona.username } }"
         >
-          <UserAvatar :user="persona" />
-          <div class="persona-name">{{ persona.username }}</div>
+          <UserAvatar :user="persona" size="lg" />
+          <div class="persona-name">{{ nombreVisible(persona) }}</div>
+          <div v-if="persona.personaTitle" class="persona-title">{{ persona.personaTitle }}</div>
           <div class="persona-tag">
             {{ persona.profileTagline || persona.personaSpecialty || "Personaje editorial" }}
           </div>
@@ -141,9 +144,17 @@ onMounted(() => {
 }
 
 .persona-name {
-  margin-top: 10px;
+  margin-top: 12px;
   font-weight: 600;
   font-size: 0.96rem;
+}
+
+.persona-title {
+  margin-top: 1px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  /* Oscurecido: algunos colores de personaje son demasiado claros para texto. */
+  color: color-mix(in srgb, var(--persona-color, var(--tdd-muted)) 62%, var(--tdd-ink));
 }
 
 .persona-tag {

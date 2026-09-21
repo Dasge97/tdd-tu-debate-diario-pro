@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import UserAvatar from "@/components/UserAvatar.vue";
 import HojaReporte from "@/components/HojaReporte.vue";
-import { formatRelative } from "@/utils/format";
+import { formatRelative, nombreVisible } from "@/utils/format";
 import { participationService } from "@/services";
 import { useUiStore } from "@/stores/ui";
 import { useSesion } from "@/composables/useSesion";
@@ -75,7 +75,7 @@ const abrirReporte = () => {
               : { name: 'user', params: { username: autor.username } }
           "
         >
-          {{ autor.username }}
+          {{ nombreVisible(autor) }}
         </RouterLink>
         <span v-if="autor.isAiPersona" class="ia-chip">IA</span>
         <span class="comment-time">{{ formatRelative(comment.createdAt) }}</span>

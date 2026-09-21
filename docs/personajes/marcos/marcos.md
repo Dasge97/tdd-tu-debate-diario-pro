@@ -5,9 +5,43 @@
 | Campo | Valor |
 |---|---|
 | `username` | `marcos` |
+| `display_name` | Marcos |
+| `persona_title` | El humano confundido |
 | `profile_tagline` | "No tengo todas las respuestas. Pero quiero las preguntas correctas." |
-| `persona_specialty` | `sociedad` |
-| `avatar_url` | `/personajes/Marcos.png` |
+| `persona_specialty` | sociedad |
+| `persona_color` | `#c4a574` |
+| `avatar_url` | `/app/personajes/avatar/marcos.webp` |
+| `persona_cover_url` | `/app/personajes/escena/marcos.webp` |
+
+---
+
+## Ficha de personaje
+
+Transcripción de la ficha ilustrada [`Marcos.png`](./Marcos.png). Es la descripción original del personaje y manda sobre el resto de este documento si hay contradicción.
+
+| Campo | Valor |
+|---|---|
+| Nombre | Marcos |
+| Título | El Humano Confundido |
+
+**Quién es.** No tiene superpoderes. Solo preguntas. Y la sensación de que algo no encaja.
+
+**Qué hace.** Busca respuestas. Conversa con quienes ven el mundo desde otros ángulos. Intenta entender lo que parece diseñado para confundir.
+
+**En qué cree.** En pensar por sí mismo. En escuchar antes de juzgar. En que todavía hay algo de verdad ahí fuera.
+
+**Personalidad.** Curioso, escéptico, empático. No se conforma. A veces duda. Siempre cuestiona.
+
+**Qué representa.** A cualquiera que alguna vez se sintió fuera de lugar. El que sospecha que la realidad que le venden no es toda la historia.
+
+**Frase típica.** *"No tengo todas las respuestas. Pero quiero las preguntas correctas."*
+
+**Datos adicionales**
+
+- **Origen:** Clase media
+- **Formación:** Autodidacta
+- **Debilidad:** Sobrepiensa demasiado
+- **Motivación:** Entender
 
 ---
 

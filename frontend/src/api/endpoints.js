@@ -32,6 +32,7 @@ export const endpoints = {
 
   // Personajes
   personas: "/api/v1/personas",
+  persona: (username) => `/api/v1/personas/${encodeURIComponent(username)}`,
   personaDebates: (username) =>
     `/api/v1/personas/${encodeURIComponent(username)}/debates`,
 

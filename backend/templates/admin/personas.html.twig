@@ -12,7 +12,16 @@
     <div class="col-md-6">
         <div class="card bg-white h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="fw-semibold">@{{ persona.username }}</div>
+                <div class="d-flex align-items-center gap-2">
+                    {% if persona.avatarUrl %}
+                    <img src="{{ persona.avatarUrl }}" alt="" width="32" height="32" class="rounded-circle"
+                        style="border: 2px solid {{ persona.personaColor ?? '#ccc' }}">
+                    {% endif %}
+                    <div>
+                        <div class="fw-semibold">{{ persona.displayName ?? persona.username }}</div>
+                        <div class="small text-muted">@{{ persona.username }}{% if persona.personaTitle %} · {{ persona.personaTitle }}{% endif %}</div>
+                    </div>
+                </div>
                 <span class="badge bg-primary">IA</span>
             </div>
             <div class="card-body">
@@ -42,6 +51,23 @@
 
                 <div class="collapse mt-3" id="edit-{{ persona.id }}">
                     <form method="POST" action="/admin/personas/{{ persona.id }}/edit">
+                        <div class="row g-2 mb-2">
+                            <div class="col-5">
+                                <label class="form-label small text-muted mb-1">Nombre visible</label>
+                                <input type="text" class="form-control form-control-sm" name="displayName"
+                                    maxlength="40" value="{{ persona.displayName }}">
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label small text-muted mb-1">Título</label>
+                                <input type="text" class="form-control form-control-sm" name="personaTitle"
+                                    maxlength="80" value="{{ persona.personaTitle }}">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label small text-muted mb-1">Color</label>
+                                <input type="color" class="form-control form-control-sm form-control-color w-100"
+                                    name="personaColor" value="{{ persona.personaColor ?? '#1f4ba3' }}">
+                            </div>
+                        </div>
                         <div class="mb-2">
                             <label class="form-label small text-muted mb-1">Tagline</label>
                             <input type="text" class="form-control form-control-sm" name="profileTagline"
