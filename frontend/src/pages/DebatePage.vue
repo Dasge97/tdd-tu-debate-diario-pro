@@ -12,7 +12,7 @@ import { useFavoritesStore } from "@/stores/favorites";
 import { useUiStore } from "@/stores/ui";
 import { debatesService, participationService } from "@/services";
 import { errorMessage } from "@/api/client";
-import { formatDateTime, nombreVisible, plural, toParagraphs } from "@/utils/format";
+import { contextBlocks, formatDateTime, nombreVisible, plural } from "@/utils/format";
 import { useSesion } from "@/composables/useSesion";
 
 const props = defineProps({
@@ -56,7 +56,7 @@ const miPosicion = ref(leerPosiciones()[debateId] || null);
 const porcentajes = computed(() => debates.percentagesFor(debateId));
 const esFavorito = computed(() => favorites.isFavorite(debateId));
 const autor = computed(() => debate.value?.createdBy || null);
-const parrafos = computed(() => toParagraphs(debate.value?.context));
+const bloques = computed(() => contextBlocks(debate.value?.context));
 const totalComentarios = computed(() =>
   comentarios.value.reduce((suma, c) => suma + 1 + (c.replies?.length || 0), 0)
 );
@@ -197,21 +197,23 @@ const enviar = async (contenido) => {
 
           <h1 class="debate-title">{{ debate.title }}</h1>
 
-          <div class="debate-section-label">De qué va este debate</div>
-
-          <p v-if="debate.question" class="debate-story-paragraph debate-story-question">
-            <span class="debate-story-lead">La pregunta:</span>
-            {{ debate.question }}
-          </p>
-
-          <p v-if="debate.cardSummary" class="debate-story-paragraph">
-            <span class="debate-story-lead">La idea central:</span>
+          <p v-if="debate.cardSummary" class="debate-story-paragraph debate-story-intro">
             {{ debate.cardSummary }}
           </p>
 
-          <p v-for="(parrafo, indice) in parrafos" :key="indice" class="debate-story-paragraph">
-            {{ parrafo }}
-          </p>
+          <template v-for="(bloque, indice) in bloques" :key="indice">
+            <h2
+              v-if="bloque.type === 'heading'"
+              class="debate-block-title"
+              :class="bloque.side ? `is-${bloque.side}` : null"
+            >
+              {{ bloque.text }}
+            </h2>
+            <ul v-else-if="bloque.type === 'list'" class="debate-arguments">
+              <li v-for="(item, i) in bloque.items" :key="i">{{ item }}</li>
+            </ul>
+            <p v-else class="debate-story-paragraph">{{ bloque.text }}</p>
+          </template>
 
           <p v-if="debate.sourceUrl" style="margin-top: 16px">
             <a :href="debate.sourceUrl" target="_blank" rel="noopener noreferrer">
@@ -220,6 +222,7 @@ const enviar = async (contenido) => {
           </p>
 
           <div style="margin-top: 20px">
+            <p v-if="debate.question" class="debate-vote-question">{{ debate.question }}</p>
             <PositionBar :percentages="porcentajes" />
 
             <div class="position-picker">

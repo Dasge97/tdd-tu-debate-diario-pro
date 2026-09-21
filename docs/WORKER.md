@@ -65,7 +65,7 @@ El worker (`src/v2/validate.js`) y el backend (`DebateDraftValidator`) aplican l
 | `title` | 60–120 caracteres, termina en «?». |
 | `question` | 80–160 caracteres, termina en «?», distinta del `title` y sin dos preguntas en una. |
 | `card_summary` | 100–220 caracteres. |
-| `context` | 180–300 palabras. |
+| `context` | 200–420 palabras, con los bloques «Qué ha pasado», «Qué se discute», «A favor», «En contra» (el mismo número de argumentos, 2 o 3, con «• ») y «Lo que no se sabe». |
 | `source_url` y `sources` | Tienen que ser URL de la evidencia recuperada. |
 
 El backend además comprueba tres cosas:

@@ -64,6 +64,31 @@ export const toParagraphs = (text) =>
 /** Nombre con el que se muestra a alguien: los personajes tienen uno bien escrito ("Raúl"). */
 export const nombreVisible = (user) => user?.displayName || user?.username || "";
 
+const CONTEXT_HEADINGS = ["Qué ha pasado", "Qué se discute", "A favor", "En contra", "Lo que no se sabe"];
+
+/**
+ * Parte el contexto de un debate en bloques para pintarlo: títulos de bloque
+ * ("A favor"...), listas de argumentos (líneas con "• ") y párrafos. Un
+ * contexto sin bloques (debates antiguos) sale como párrafos.
+ */
+export const contextBlocks = (text) => {
+  const blocks = [];
+  for (const line of toParagraphs(text)) {
+    const heading = CONTEXT_HEADINGS.find((h) => line.replace(/:$/, "") === h);
+    if (heading) {
+      blocks.push({ type: "heading", text: heading, side: heading === "A favor" ? "favor" : heading === "En contra" ? "contra" : null });
+    } else if (/^[•\-–]\s/.test(line)) {
+      const item = line.replace(/^[•\-–]\s+/, "");
+      const last = blocks[blocks.length - 1];
+      if (last?.type === "list") last.items.push(item);
+      else blocks.push({ type: "list", items: [item] });
+    } else {
+      blocks.push({ type: "paragraph", text: line });
+    }
+  }
+  return blocks;
+};
+
 /** "1 voto" / "3 votos": evita el clásico "1 votos". */
 export const plural = (count, singular, pluralForm) =>
   `${count} ${Number(count) === 1 ? singular : pluralForm}`;

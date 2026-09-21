@@ -8,7 +8,7 @@ import { assertPublicUrl, decodeBody, isPrivateAddress, safeFetch } from '../src
 import { parseFeed } from '../src/v2/feeds.js';
 import { detectAgency } from '../src/v2/agency.js';
 import { validateDraft } from '../src/v2/validate.js';
-import { FEEDS } from './fixtures.js';
+import { FEEDS, debateContext } from './fixtures.js';
 
 test('limpia HTML, scripts y entidades', () => {
   assert.equal(cleanHtml('<p>Hola &amp; <b>adiós</b></p><script>alert(1)</script> &#8220;x&#8221;'), 'Hola & adiós “x”');
@@ -135,10 +135,16 @@ test('validación de borradores igual que en el backend', () => {
     title: '¿Debería el ayuntamiento limitar el acceso de vehículos al centro de la ciudad?',
     question: '¿Estás a favor de que el ayuntamiento limite el acceso de vehículos privados al centro desde enero?',
     card_summary: 'El ayuntamiento ha presentado un plan para limitar el tráfico en el centro. La medida entraría en vigor en enero.',
-    context: 'palabra '.repeat(200).trim(),
+    context: debateContext(),
     source_name: 'Medio', source_url: 'https://medio.example/a', sources: [{ url: 'https://medio.example/a' }],
   };
   assert.deepEqual(validateDraft(draft, ['https://medio.example/a']), []);
+
+  // Una noticia sin bloques de debate no vale.
+  assert.match(validateDraft({ ...draft, context: 'palabra '.repeat(250) }, ['https://medio.example/a']).join(' '), /sin los bloques/);
+  // Los dos lados tienen que tener los mismos argumentos.
+  const desigual = debateContext().replace('En contra\n• ', 'En contra\n');
+  assert.match(validateDraft({ ...draft, context: desigual }, ['https://medio.example/a']).join(' '), /argumentos/);
   const bad = { ...draft, question: '¿A favor? ¿O en contra de todo lo que propone el ayuntamiento para el centro de la ciudad?', source_url: 'https://otra.example' };
   const errors = validateDraft(bad, ['https://medio.example/a']).join(' | ');
   assert.match(errors, /más de una pregunta/);

@@ -51,7 +51,7 @@ class UnitTest extends TestCase
             'title'        => '¿Debería el ayuntamiento limitar el acceso de vehículos al centro de la ciudad?',
             'question'     => '¿Estás a favor de que el ayuntamiento limite el acceso de vehículos privados al centro desde enero?',
             'card_summary' => 'El ayuntamiento ha presentado un plan para limitar el tráfico en el centro. La medida entraría en vigor en enero.',
-            'context'      => trim(str_repeat('palabra ', 200)),
+            'context'      => implode("\n", ['Qué ha pasado', trim(str_repeat('hecho ', 60)), 'Qué se discute', trim(str_repeat('dilema ', 40)), 'A favor', '• ' . trim(str_repeat('razon ', 25)), '• ' . trim(str_repeat('razon ', 25)), 'En contra', '• ' . trim(str_repeat('objecion ', 25)), '• ' . trim(str_repeat('objecion ', 25)), 'Lo que no se sabe', trim(str_repeat('duda ', 20))]),
             'source_name'  => 'Medio',
             'source_url'   => 'https://medio.example/a',
             'sources'      => [['name' => 'Medio', 'url' => 'https://medio.example/a']],
@@ -74,6 +74,7 @@ class UnitTest extends TestCase
 
         self::assertStringContainsString('más de una pregunta', $errors);
         self::assertStringContainsString('context tiene 2 palabras', $errors);
+        self::assertStringContainsString('sin los bloques', $errors);
         self::assertStringContainsString('fuentes no pertenece', $errors);
     }
 

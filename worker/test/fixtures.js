@@ -208,6 +208,11 @@ const TOPIC_WORDS = [
 
 const words = (n, w = 'dato') => Array.from({ length: n }, (_, i) => `${w}${i % 7}`).join(' ');
 
+/** Contexto con los bloques de un debate (unas 230 palabras). */
+export const debateContext = () => ['Qué ha pasado', words(60), 'Qué se discute', words(40),
+  'A favor', `• ${words(25)}`, `• ${words(25)}`, 'En contra', `• ${words(25)}`, `• ${words(25)}`,
+  'Lo que no se sabe', words(20)].join('\n');
+
 /**
  * Modelo falso. Reconoce el tipo de llamada por el prompt de sistema.
  * `failGenerateFor` hace que el borrador de un personaje salga siempre mal.
@@ -252,7 +257,7 @@ export function fakeLlmTransport({ failGenerateFor = null, usage = true, insuffi
         title: `¿Debería aplicarse la medida anunciada que ahora analiza ${persona} con los datos?`,
         question: '¿Estás a favor de que la institución aplique la medida anunciada tal y como se ha presentado hoy?',
         card_summary: 'La institución ha anunciado una medida. Estos son los hechos conocidos, lo que dicen las partes y lo que aún falta por saber.',
-        context: words(210),
+        context: debateContext(),
         used_refs: ['E1', 'E2', 'E77'],
         primary_ref: 'E1',
       });

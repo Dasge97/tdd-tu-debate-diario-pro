@@ -128,7 +128,7 @@ abstract class EditorialTestCase extends KernelTestCase
             'title'            => "¿Debería aprobarse la medida número {$n} que el Gobierno ha presentado esta semana?",
             'question'         => "¿Estás a favor de que la medida número {$n} se apruebe tal como la ha presentado el Gobierno esta semana?",
             'card_summary'     => str_repeat('Resumen neutral del acontecimiento con los datos principales. ', 3),
-            'context'          => trim(str_repeat('palabra ', 220)),
+            'context'          => implode("\n", ['Qué ha pasado', trim(str_repeat('hecho ', 60)), 'Qué se discute', trim(str_repeat('dilema ', 40)), 'A favor', '• ' . trim(str_repeat('razon ', 25)), '• ' . trim(str_repeat('razon ', 25)), 'En contra', '• ' . trim(str_repeat('objecion ', 25)), '• ' . trim(str_repeat('objecion ', 25)), 'Lo que no se sabe', trim(str_repeat('duda ', 20))]),
             'source_name'      => 'Medio A',
             'source_url'       => $url,
             'sources'          => [['name' => 'Medio A', 'url' => $url]],

@@ -19,8 +19,10 @@ class DebateDraftValidator
     public const QUESTION_MAX = 160;
     public const SUMMARY_MIN = 100;
     public const SUMMARY_MAX = 220;
-    public const CONTEXT_MIN_WORDS = 180;
-    public const CONTEXT_MAX_WORDS = 300;
+    public const CONTEXT_MIN_WORDS = 200;
+    public const CONTEXT_MAX_WORDS = 420;
+    /** Bloques obligatorios del contexto, cada título en su propia línea. */
+    public const CONTEXT_SECTIONS = ['Qué ha pasado', 'Qué se discute', 'A favor', 'En contra'];
 
     /**
      * @param array    $draft        title, question, card_summary, context, source_url, sources[]
@@ -74,6 +76,22 @@ class DebateDraftValidator
             $errors[] = sprintf('context tiene %d palabras (%d-%d)', $words, self::CONTEXT_MIN_WORDS, self::CONTEXT_MAX_WORDS);
         }
 
+        // Un debate, no una noticia: bloques obligatorios y los dos lados con los mismos argumentos.
+        $sections = self::sections($draft['context']);
+        $missing = array_values(array_filter(self::CONTEXT_SECTIONS, static fn(string $h) => empty($sections[$h])));
+        if ($missing !== []) {
+            $errors[] = 'context sin los bloques: ' . implode(', ', $missing);
+        } else {
+            $bullets = static fn(string $h) => count(array_filter($sections[$h], static fn(string $l) => str_starts_with($l, '•')));
+            $pro = $bullets('A favor');
+            $con = $bullets('En contra');
+            if ($pro < 2 || $con < 2) {
+                $errors[] = "A favor y En contra necesitan al menos 2 argumentos (hay {$pro} y {$con})";
+            } elseif ($pro !== $con) {
+                $errors[] = "A favor tiene {$pro} argumentos y En contra {$con}";
+            }
+        }
+
         // Vocabulario interno del motor que el lector no debe ver.
         foreach (['title', 'question', 'card_summary', 'context'] as $field) {
             if (preg_match('/\b(dossier|fragmentos?|extractos?)\b/iu', $draft[$field])) {
@@ -94,5 +112,29 @@ class DebateDraftValidator
         }
 
         return $errors;
+    }
+
+    /** Parte el contexto en bloques por sus títulos: [título => líneas]. */
+    public static function sections(string $context): array
+    {
+        $known = [...self::CONTEXT_SECTIONS, 'Lo que no se sabe'];
+        $out = [];
+        $current = null;
+        foreach (preg_split('/\R/u', $context) as $raw) {
+            $line = trim($raw);
+            if ($line === '') {
+                continue;
+            }
+            $heading = rtrim($line, ':');
+            if (in_array($heading, $known, true)) {
+                $current = $heading;
+                $out[$current] = [];
+                continue;
+            }
+            if ($current !== null) {
+                $out[$current][] = $line;
+            }
+        }
+        return $out;
     }
 }
