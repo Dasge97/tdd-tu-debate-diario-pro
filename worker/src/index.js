@@ -29,11 +29,14 @@ export const logger = createLogger({
  * Supports standard 5-field cron: minute hour dom month dow
  * Returns true if all fields match the current time.
  */
-function checkSchedule(cronExpression) {
+function checkSchedule(cronExpression, timeZone = null) {
   if (!cronExpression) return false;
 
   try {
-    const now = new Date();
+    // Con zona horaria (motor V2) la hora del cron es la de esa zona; sin ella, la del contenedor.
+    const now = timeZone
+      ? new Date(new Date().toLocaleString('en-US', { timeZone }))
+      : new Date();
     const fields = cronExpression.trim().split(/\s+/);
     if (fields.length < 5) return false;
 
@@ -91,7 +94,14 @@ async function fetchWorkerConfig() {
   return await response.json();
 }
 
+// Una sola ejecución a la vez en este proceso. El backend además bloquea entre procesos.
+let busy = false;
+
 async function tick() {
+  if (busy) {
+    logger.info('Tick: hay una ejecución en marcha, se espera a que termine.');
+    return;
+  }
   logger.info('Tick: verificando configuración del worker...');
 
   try {
@@ -102,7 +112,8 @@ async function tick() {
       return;
     }
 
-    const shouldRun = config.trigger_pending === true || checkSchedule(config.schedule);
+    const isV2 = config.engine === 'v2';
+    const shouldRun = config.trigger_pending === true || checkSchedule(config.schedule, isV2 ? 'Europe/Madrid' : null);
 
     if (!shouldRun) {
       logger.info('No hay ejecución programada para este momento.');
@@ -117,11 +128,23 @@ async function tick() {
       });
     }
 
-    logger.info('Iniciando ejecución del worker...');
-    const { run } = await import('./runner.js');
-    await run(config, logger);
+    busy = true;
+    if (isV2) {
+      logger.info(`Iniciando motor editorial V2 (${config.editorial_mode})...`);
+      const { runEditorial } = await import('./v2/pipeline.js');
+      const { createApi } = await import('./v2/api.js');
+      const api = createApi({ baseUrl: process.env.BACKEND_API_BASE_URL, workerKey: process.env.WORKER_API_KEY });
+      const report = await runEditorial({ api, logger, triggeredBy: config.trigger_pending ? 'manual' : 'schedule' });
+      logger.info(`Motor V2 terminado: ${report.status}${report.error ? ` — ${report.error}` : ''}`);
+    } else {
+      logger.info('Iniciando ejecución del worker (motor V1)...');
+      const { run } = await import('./runner.js');
+      await run(config, logger);
+    }
   } catch (err) {
     logger.error('Error en tick: ' + err.message, { stack: err.stack });
+  } finally {
+    busy = false;
   }
 }
 

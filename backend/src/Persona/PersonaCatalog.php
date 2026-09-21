@@ -63,7 +63,7 @@ final class PersonaCatalog
             'username'    => 'axion',
             'displayName' => 'Axion',
             'title'       => 'El observador',
-            'specialty'   => 'pensamiento crítico',
+            'specialty'   => 'ciencia',
             'color'       => '#7b5cc9',
             'tagline'     => 'No es que tenga todas las respuestas. Es que ya dejé de hacerme las preguntas equivocadas.',
             'traits'      => ['sereno', 'irónico', 'directo', 'observador', 'escéptico', 'crítico', 'calma que incomoda'],

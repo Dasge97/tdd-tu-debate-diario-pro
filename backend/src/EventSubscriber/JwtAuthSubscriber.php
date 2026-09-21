@@ -76,6 +76,11 @@ class JwtAuthSubscriber implements EventSubscriberInterface
             }
         }
 
+        // Motor editorial V2: no usa sesión de usuario; su controlador exige X-Worker-Key.
+        if (str_starts_with($path, '/api/v1/worker/editorial/')) {
+            return;
+        }
+
         // OPTIONS preflight
         if ($request->getMethod() === 'OPTIONS') {
             return;

@@ -1,0 +1,92 @@
+{% extends 'admin/base.html.twig' %}
+{% block title %}Ejecución {{ detail.run.editorial_day }} — Admin TDD{% endblock %}
+
+{% set assignmentClass = {'validated': 'bg-success', 'published': 'bg-primary', 'rejected': 'bg-danger', 'generated': 'bg-info text-dark', 'planned': 'bg-secondary'} %}
+
+{% block content %}
+{% set run = detail.run %}
+<a href="/admin/editorial" class="small">&larr; Motor editorial</a>
+<h2 class="mt-2 mb-1">Ejecución del {{ run.editorial_day|date('d/m/Y') }}</h2>
+<p class="text-muted mb-4">
+    {{ run.mode == 'live' ? 'Publicación' : 'Prueba sin publicar' }} · <strong>{{ run.status }}</strong>
+    · {{ run.started_at|date('d/m H:i') }}{% if run.finished_at %} – {{ run.finished_at|date('H:i') }}{% endif %}
+    · <code class="small">{{ run.id }}</code>
+</p>
+{% if run.error %}<div class="alert alert-warning">{{ run.error }}</div>{% endif %}
+
+<div class="card bg-white mb-4">
+    <div class="card-header fw-semibold">Etapas</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light"><tr><th>Etapa</th><th>Estado</th><th>Intentos</th><th>Duración</th><th>Métricas</th></tr></thead>
+            <tbody>
+            {% for s in detail.stages %}
+                <tr>
+                    <td class="fw-semibold">{{ s.name }}</td>
+                    <td><span class="badge {{ s.status == 'done' ? 'bg-success' : (s.status == 'failed' ? 'bg-danger' : 'bg-warning text-dark') }}">{{ s.status }}</span></td>
+                    <td>{{ s.attempts }}</td>
+                    <td>{{ s.metrics.duration_ms is defined ? (s.metrics.duration_ms / 1000)|number_format(1, ',', '.') ~ ' s' : '—' }}</td>
+                    <td>
+                        {% if s.error %}<div class="text-danger small">{{ s.error }}</div>{% endif %}
+                        <details><summary class="small">ver</summary><pre class="small mb-0" style="white-space:pre-wrap;max-width:720px">{{ s.metrics|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre></details>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card bg-white mb-4">
+    <div class="card-header fw-semibold">Asignaciones y borradores</div>
+    <div class="card-body">
+    {% for a in detail.assignments %}
+        <div class="border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between">
+                <div><strong>@{{ a.persona_username }}</strong> · {{ a.event_title }} <span class="text-muted small">(acontecimiento {{ a.event_id }}, versión {{ a.event_version }})</span></div>
+                <span class="badge {{ assignmentClass[a.status] ?? 'bg-secondary' }}">{{ a.status }}</span>
+            </div>
+            <div class="small text-muted mt-1">{{ a.reasons|join(' · ') }}</div>
+            {% if a.rejection_reason %}<div class="small text-danger mt-1">Rechazo: {{ a.rejection_reason }}</div>{% endif %}
+            {% if a.draft %}
+                <div class="mt-2">
+                    <div class="fw-semibold">{{ a.draft.title }}</div>
+                    <div class="fst-italic">{{ a.draft.question }}</div>
+                    <div class="small mt-1">{{ a.draft.card_summary }}</div>
+                    <details class="mt-1"><summary class="small">Contexto y fuentes</summary>
+                        <p class="small mt-2" style="white-space:pre-wrap">{{ a.draft.context }}</p>
+                        <ul class="small">{% for s in a.draft.sources ?? [] %}<li><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.name }}</a></li>{% endfor %}</ul>
+                    </details>
+                </div>
+            {% endif %}
+            {% if a.review and a.review.issues is not empty %}
+                <ul class="small text-danger mt-2 mb-0">{% for i in a.review.issues %}<li>{{ i.type }}: {{ i.detail }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">Sin asignaciones.</p>
+    {% endfor %}
+    </div>
+</div>
+
+<div class="card bg-white">
+    <div class="card-header fw-semibold">Llamadas al modelo ({{ detail.calls|length }})</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 small">
+            <thead class="table-light"><tr><th>Etapa</th><th>Para</th><th>Ref.</th><th>Modelo</th><th class="text-end">Entrada</th><th class="text-end">Salida</th><th class="text-end">Caché</th><th class="text-end">Duración</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for c in detail.calls %}
+                <tr>
+                    <td>{{ c.stage }}</td><td>{{ c.purpose }}</td><td>{{ c.reference }}</td><td>{{ c.model }}</td>
+                    <td class="text-end">{{ c.input_tokens ?? '?' }}</td>
+                    <td class="text-end">{{ c.output_tokens ?? '?' }}</td>
+                    <td class="text-end">{{ c.cached_tokens ?? '?' }}</td>
+                    <td class="text-end">{{ (c.duration_ms / 1000)|number_format(1, ',', '.') }} s</td>
+                    <td>{% if c.status == 'ok' %}ok{% else %}<span class="text-danger">{{ c.status }}: {{ c.error|length > 160 ? c.error|slice(0, 160) ~ '…' : c.error }}</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

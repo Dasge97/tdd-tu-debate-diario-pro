@@ -4,13 +4,16 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "test": "node --test \"test/*.test.js\"",
+    "editorial:dry-run": "node src/v2/cli.js"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2",
     "dotenv": "^16.4.5",
+    "fast-xml-parser": "^5.11.1",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
     "uuid": "^10.0.0",
-    "winston": "^3.14.0",
-    "node-cron": "^3.0.3"
+    "winston": "^3.14.0"
   }
 }

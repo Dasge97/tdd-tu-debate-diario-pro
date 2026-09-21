@@ -21,8 +21,8 @@ export const PERSONAS = [
   },
   {
     username: 'axion',
-    specialty: 'pensamiento crítico',
-    bio: 'Axion es una mente antigua en un cuerpo inusual: llegó de un rincón remoto del pantano digital para observar cómo los humanos se enredan en sus propias contradicciones. Habla de desinformación, redes sociales, algoritmos y de lo que damos por cierto sin comprobarlo. Analiza, cuestiona y conecta puntos que otros prefieren ignorar. No da respuestas fáciles: hace las preguntas que abren grietas. Habla poco, sereno e irónico, y cuando habla va al fondo.',
+    specialty: 'ciencia',
+    bio: 'Axion es una mente antigua en un cuerpo inusual: llegó de un rincón remoto del pantano digital para observar cómo los humanos se enredan en sus propias contradicciones. Habla de ciencia y de cómo sabemos lo que creemos saber: investigación, salud, evidencia, desinformación y algoritmos. Analiza, cuestiona y conecta puntos que otros prefieren ignorar. No da respuestas fáciles: hace las preguntas que abren grietas. Habla poco, sereno e irónico, y cuando habla va al fondo.',
     tagline: 'No es que tenga todas las respuestas. Es que ya dejé de hacerme las preguntas equivocadas.',
     traits: ['sereno', 'irónico', 'directo', 'observador', 'escéptico', 'crítico', 'calma que incomoda'],
   },

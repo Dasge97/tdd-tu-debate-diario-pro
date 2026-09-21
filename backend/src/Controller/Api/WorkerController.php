@@ -46,6 +46,8 @@ class WorkerController extends AbstractController
             'dedup_days'          => $config->getDedupDays(),
             'rotation_limit_days' => $config->getRotationLimitDays(),
             'target_debates'      => $config->getTargetDebates(),
+            'engine'              => $config->getEngine(),
+            'editorial_mode'      => $config->getEditorialMode(),
         ]);
     }
 

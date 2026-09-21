@@ -1,0 +1,58 @@
+{% extends 'admin/base.html.twig' %}
+{% block title %}Fuentes del motor editorial — Admin TDD{% endblock %}
+
+{% block content %}
+<a href="/admin/editorial" class="small">&larr; Motor editorial</a>
+<h2 class="mt-2 mb-1">Fuentes</h2>
+<p class="text-muted mb-4">Solo se guardan el titular y el extracto que publica cada feed. Una fuente que falla no detiene a las demás.</p>
+
+{% if error %}<div class="alert alert-danger py-2">{{ error }}</div>{% endif %}
+
+<div class="card bg-white mb-4">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>Fuente</th><th>Ámbito</th><th>Origen</th><th>Temas</th><th>Estado</th><th class="text-end">Noticias</th><th>Última descarga</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for s in sources %}
+                <tr class="{{ s.enabled ? '' : 'text-muted' }}">
+                    <td><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.name }}</a></td>
+                    <td>{{ s.scope == 'es' ? 'España' : 'Internacional' }}</td>
+                    <td>{{ s.originType }}</td>
+                    <td class="small">{{ s.topics|join(', ') }}</td>
+                    <td>
+                        {% if not s.enabled %}<span class="badge bg-light text-dark">desactivada</span>
+                        {% elseif s.status == 'ok' %}<span class="badge bg-success">ok</span>
+                        {% elseif s.status == 'error' %}<span class="badge bg-danger" title="{{ s.lastError }}">error ({{ s.consecutiveFailures }})</span>
+                        {% else %}<span class="badge bg-secondary">{{ s.status }}</span>{% endif %}
+                    </td>
+                    <td class="text-end">{{ s.lastItemCount }}</td>
+                    <td class="small">{{ s.lastFetchedAt ? s.lastFetchedAt|date('d/m H:i') : '—' }}</td>
+                    <td>
+                        <form method="POST" action="/admin/editorial/fuentes/{{ s.id }}/toggle">
+                            <button class="btn btn-sm btn-outline-secondary">{{ s.enabled ? 'Desactivar' : 'Activar' }}</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8" class="text-center text-muted py-3">No hay fuentes. Ejecuta <code>php bin/console app:editorial:sources:sync</code>.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<form method="POST" action="/admin/editorial/fuentes" class="card bg-white">
+    <div class="card-header fw-semibold">Añadir fuente</div>
+    <div class="card-body row g-2">
+        <div class="col-md-3"><input class="form-control form-control-sm" name="name" placeholder="Nombre" required></div>
+        <div class="col-md-4"><input class="form-control form-control-sm" name="url" type="url" placeholder="https://… (RSS o Atom)" required></div>
+        <div class="col-md-1"><select class="form-select form-select-sm" name="type"><option value="rss">RSS</option><option value="atom">Atom</option></select></div>
+        <div class="col-md-1"><select class="form-select form-select-sm" name="scope"><option value="es">España</option><option value="intl">Intl.</option></select></div>
+        <div class="col-md-1"><select class="form-select form-select-sm" name="origin"><option value="medio">medio</option><option value="agencia">agencia</option><option value="institucional">institucional</option></select></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" name="topics" placeholder="economía, política"></div>
+        <div class="col-12"><button class="btn btn-sm btn-primary">Añadir</button></div>
+    </div>
+</form>
+{% endblock %}

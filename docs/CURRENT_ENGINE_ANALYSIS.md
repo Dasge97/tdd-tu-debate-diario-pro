@@ -56,3 +56,12 @@ Antes de afirmar un porcentaje de ahorro, recoger tokens de entrada/salida, toke
 Reemplazar el flujo conversacional de búsqueda/selección/generación por ingesta persistente, agrupación por acontecimiento, dossier factual trazable y generación acotada. Conservar la aplicación, perfiles y participación comunitaria. No basta con acortar los prompts actuales.
 
 Esta revisión no es una auditoría completa de seguridad ni describe el estado de producción.
+
+## Comprobaciones en producción (2026-09-21, al implementar el V2)
+
+- El último debate publicado es del 2026-05-23. El worker está desactivado desde el panel.
+- La imagen del worker (`node:22-alpine` más `npm install`) no incluye el CLI `claude` ni `opencode`. Con el worker activado, el V1 fallaría al lanzar el primer prompt. Por eso no se pudo hacer la comparación V1/V2 con las mismas entradas que pide la especificación: no hay ejecución del V1 que medir, ni telemetría histórica de tokens.
+- Las variables de entorno del worker en producción apuntan a `gpt-4o` por `OPENCODE_*`, pero el código leído usa `AI_CLI_COMMAND` (por defecto `claude`). La configuración y el código no coincidían.
+- El esquema de producción se aplicaba con `doctrine:schema:update`; no había migraciones.
+
+El reemplazo está implementado en `worker/src/v2/` y documentado en [WORKER.md](WORKER.md).

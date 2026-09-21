@@ -118,6 +118,8 @@ class DebateController extends AbstractController
             'context'         => $debate->getContext(),
             'sourceName'      => $debate->getSourceName(),
             'sourceUrl'       => $debate->getSourceUrl(),
+            // Todas las fuentes del motor V2; null en los debates anteriores.
+            'sources'         => $debate->getSources(),
             'publishedAt'     => $debate->getPublishedAt()?->format(\DateTimeInterface::ATOM),
             'dayDate'         => $debate->getDayDate()->format('Y-m-d'),
             'authorType'      => $debate->getAuthorType(),

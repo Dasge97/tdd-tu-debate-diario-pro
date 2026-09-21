@@ -180,6 +180,33 @@ payload          JSON
 created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
 ```
 
+### Motor editorial V2
+
+Las crea la migración `backend/migrations/Version20260921190000.php`. Detalle del funcionamiento en [WORKER.md](WORKER.md).
+
+| Tabla | Qué guarda |
+|---|---|
+| `editorial_sources` | Catálogo de feeds RSS/Atom: tipo, URL, ámbito (`es`/`intl`), origen (`medio`/`agencia`/`institucional`), temas, activa, estado de la última descarga, ETag y Last-Modified. |
+| `editorial_articles` | Noticias descargadas: URL y URL canónica, `url_hash` único, titular, extracto del feed, `content_hash`, fecha de publicación (null si la fuente no la da), fecha de descarga, agencia detectada y acontecimiento. |
+| `editorial_events` | Acontecimientos: título, palabras clave, temas, primera y última observación, `version` (sube si cambia la evidencia), `evidence_hash`, número de noticias y de fuentes independientes, última publicación. |
+| `editorial_dossiers` | Resumen de hechos por acontecimiento y versión: hechos con citas, declaraciones, cifras, discrepancias, incógnitas, propuestas votables y encaje por especialidad (`data`), y los fragmentos exactos que vio el modelo (`evidence`). Único por acontecimiento + hash de evidencia + versión del prompt + modelo: es la caché. |
+| `editorial_runs` | Ejecuciones: día editorial (Madrid), modo (`dry_run`/`live`), estado, configuración usada sin la clave, métricas, latido para el bloqueo. |
+| `editorial_run_stages` | Estado, intentos y métricas de cada etapa de una ejecución. |
+| `editorial_llm_calls` | Cada llamada al modelo: etapa, propósito, modelo, versión del prompt, tokens de entrada, salida y caché (null si el proveedor no los da), duración, intento y estado. |
+| `editorial_assignments` | Qué acontecimiento trata cada personaje en una ejecución: puntuaciones, motivos, borrador, revisión, motivo de rechazo y debate publicado. |
+
+Campos añadidos a `debates` (todos opcionales; los debates anteriores los tienen a null):
+
+```sql
+editorial_event_id      BIGINT FK → editorial_events
+editorial_event_version INT
+editorial_key           VARCHAR(40) UNIQUE   -- "aaaa-mm-dd:id-del-personaje": un debate del motor por personaje y día
+sources                 JSON                 -- todas las fuentes [{name, url, published_at}]
+fact_snapshot           JSON                 -- copia del dossier usado; no cambia aunque el acontecimiento se actualice
+```
+
+Campos añadidos a `worker_config`: `engine` (`v1`/`v2`), `editorial_mode` (`dry_run`/`live`), `llm_base_url`, `llm_model`, `llm_api_key_encrypted` (libsodium, clave derivada de `APP_SECRET`), `llm_billing` y `editorial_limits`.
+
 ### worker_config
 Configuración del worker editorial, editable desde panel admin.
 ```sql

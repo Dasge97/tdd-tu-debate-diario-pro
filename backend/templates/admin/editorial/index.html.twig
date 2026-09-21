@@ -1,0 +1,141 @@
+{% extends 'admin/base.html.twig' %}
+{% block title %}Motor editorial — Admin TDD{% endblock %}
+
+{% set statusClass = {
+    'published': 'bg-success', 'completed': 'bg-info text-dark', 'running': 'bg-warning text-dark',
+    'incomplete': 'bg-secondary', 'failed': 'bg-danger', 'aborted': 'bg-dark'
+} %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Motor editorial</h2>
+    <div class="d-flex gap-2">
+        <a href="/admin/editorial/uso" class="btn btn-outline-secondary btn-sm"><i class="bi bi-bar-chart me-1"></i>Uso</a>
+        <a href="/admin/editorial/fuentes" class="btn btn-outline-secondary btn-sm"><i class="bi bi-rss me-1"></i>Fuentes</a>
+    </div>
+</div>
+
+{% if saved %}<div class="alert alert-success py-2">Configuración guardada.</div>{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <form method="POST" action="/admin/editorial/config" class="card bg-white">
+            <div class="card-header fw-semibold">Configuración</div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Motor activo</label>
+                        <select class="form-select" name="engine">
+                            <option value="v1" {{ config.engine == 'v1' ? 'selected' }}>V1 (conversación, antiguo)</option>
+                            <option value="v2" {{ config.engine == 'v2' ? 'selected' }}>V2 (por etapas)</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted">Modo del V2</label>
+                        <select class="form-select" name="mode">
+                            <option value="dry_run" {{ config.editorialMode == 'dry_run' ? 'selected' }}>Prueba: no publica</option>
+                            <option value="live" {{ config.editorialMode == 'live' ? 'selected' }}>Publicar</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="form-text mt-0">El horario, los debates por día, la rotación y los días sin repetir se configuran en <a href="/admin/worker">Worker IA</a>. Con el V2 el horario se lee en hora de Madrid.</p>
+
+                <h6 class="mt-3">Modelo</h6>
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Dirección base (compatible con OpenAI)</label>
+                    <input type="url" class="form-control" name="llmBaseUrl" value="{{ config.llmBaseUrl }}" placeholder="https://auth2api.code-hive.space">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Modelo</label>
+                    <input type="text" class="form-control" name="llmModel" value="{{ config.llmModel }}" placeholder="gpt-5.5">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Clave de API</label>
+                    <input type="password" class="form-control" name="llmApiKey" autocomplete="new-password"
+                        placeholder="{{ keyHint ? 'Guardada (' ~ keyHint ~ '). Escribe otra para cambiarla.' : 'Sin clave' }}">
+                    <div class="form-text">Se guarda cifrada y no se vuelve a mostrar.</div>
+                    {% if keyHint %}
+                    <div class="form-check mt-1">
+                        <input type="checkbox" class="form-check-input" name="llmApiKeyClear" id="clearKey" value="1">
+                        <label class="form-check-label small" for="clearKey">Borrar la clave guardada</label>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <h6 class="mt-3">Coste</h6>
+                <div class="row g-2 mb-2">
+                    <div class="col-5">
+                        <select class="form-select form-select-sm" name="billingBasis">
+                            <option value="subscription" {{ billing.basis == 'subscription' ? 'selected' }}>Suscripción (sin precio por token)</option>
+                            <option value="api" {{ billing.basis == 'api' ? 'selected' }}>API de pago por token</option>
+                        </select>
+                    </div>
+                    <div class="col-7 d-flex gap-1">
+                        <input type="number" step="0.0001" min="0" class="form-control form-control-sm" name="inputPerMTok" value="{{ billing.inputPerMTok }}" placeholder="€/M entrada">
+                        <input type="number" step="0.0001" min="0" class="form-control form-control-sm" name="outputPerMTok" value="{{ billing.outputPerMTok }}" placeholder="€/M salida">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4"><input type="text" class="form-control form-control-sm" name="currency" value="{{ billing.currency }}" maxlength="3"></div>
+                    <div class="col-8"><input type="date" class="form-control form-control-sm" name="priceDate" value="{{ billing.priceDate }}" title="Fecha de la tarifa"></div>
+                </div>
+
+                <details>
+                    <summary class="fw-semibold small mb-2">Límites de consumo y volumen</summary>
+                    <div class="row g-2">
+                        {% for key, value in limits %}
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-0">{{ key }}</label>
+                            <input type="{{ value is same as(value ~ '') ? 'text' : 'number' }}" class="form-control form-control-sm" name="limits[{{ key }}]" value="{{ value }}" title="Por defecto: {{ defaults[key] }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+            </div>
+        </form>
+
+        <div class="card bg-white mt-4">
+            <div class="card-header fw-semibold">Ejecución manual</div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Lanza el motor activo en el siguiente minuto. Con el V2 en modo prueba no se publica nada.</p>
+                <form method="POST" action="/admin/worker/trigger">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('¿Lanzar el motor ahora?')"><i class="bi bi-play-fill me-1"></i>Lanzar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card bg-white">
+            <div class="card-header fw-semibold">Ejecuciones del V2</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Día</th><th>Modo</th><th>Estado</th><th class="text-end">Debates</th><th class="text-end">Llamadas</th><th class="text-end">Tokens</th><th>Inicio</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for run in runs %}
+                        <tr>
+                            <td><a href="/admin/editorial/runs/{{ run.id }}">{{ run.editorial_day|date('d/m/Y') }}</a></td>
+                            <td>{{ run.mode == 'live' ? 'publicar' : 'prueba' }}</td>
+                            <td><span class="badge {{ statusClass[run.status] ?? 'bg-secondary' }}" title="{{ run.error }}">{{ run.status }}</span></td>
+                            <td class="text-end">{{ run.published_count }}</td>
+                            <td class="text-end">{{ run.calls }}</td>
+                            <td class="text-end">
+                                {% if run.calls > 0 and run.unknown_calls == run.calls %}desconocidos
+                                {% else %}{{ (run.input_tokens + run.output_tokens)|number_format(0, ',', '.') }}{% if run.unknown_calls > 0 %}<span class="text-muted small"> (+{{ run.unknown_calls }} sin dato)</span>{% endif %}{% endif %}
+                            </td>
+                            <td class="small">{{ run.started_at|date('d/m H:i') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7" class="text-center text-muted py-3">Todavía no hay ejecuciones del V2.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

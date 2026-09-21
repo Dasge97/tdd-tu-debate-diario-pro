@@ -1,199 +1,197 @@
-# Worker Editorial — Node.js
+# Worker editorial
 
-## Propósito
+Proceso Node.js que cada día genera los debates de la plataforma. Tiene dos
+motores y el panel decide cuál se usa (`/admin/editorial`, campo «Motor activo»):
 
-Proceso independiente que se ejecuta una vez al día y genera los 5 debates de la plataforma usando IA via opencode. Reemplaza completamente el pipeline n8n + filesystem del proyecto de referencia.
+- **V2, por etapas** (`worker/src/v2/`). Es el motor nuevo. Este documento lo describe.
+- **V1, por conversación** (`worker/src/runner.js`). Es el motor antiguo: busca, elige y redacta en una sola conversación con un CLI de IA. Se conserva mientras el V2 se valida en producción. **No funciona en la imagen de producción**, porque no incluye ese CLI. Ver [Retirada del V1](#retirada-del-v1).
 
-## Stack
+La especificación está en [EDITORIAL_ENGINE_V2.md](EDITORIAL_ENGINE_V2.md) y el análisis del motor antiguo en [CURRENT_ENGINE_ANALYSIS.md](CURRENT_ENGINE_ANALYSIS.md).
 
-- **Node.js** (ESM)
-- **opencode CLI** — gestiona la sesión de IA
-- **mysql2** — conexión directa a BD solo para queries de contexto pre-sesión
-- **node-fetch / axios** — llamadas a la API del backend para publicar
+## Cómo arranca
 
-## Estructura de archivos
+`worker/src/index.js` consulta `GET /api/v1/worker/config` cada minuto. Si el
+worker está activo y toca (horario cron o botón «Lanzar» del panel), ejecuta el
+motor elegido. En el mismo proceso no arranca una ejecución si ya hay otra en
+marcha. El backend, además, bloquea las ejecuciones simultáneas entre procesos.
 
-```
-worker/
-├── src/
-│   ├── index.js            ← entrada: lee config, decide si ejecutar
-│   ├── runner.js           ← orquesta el flujo completo
-│   ├── db.js               ← conexión MySQL (solo lectura de contexto)
-│   ├── personas.js         ← mapa id→especialidad, cálculo de rotación
-│   ├── context.js          ← queries: temas recientes + días sin publicar
-│   ├── prompts/
-│   │   ├── p1-search.js    ← Prompt 1: búsqueda de noticias
-│   │   ├── p2-select.js    ← Prompt 2: selección y asignación de perfiles
-│   │   ├── p3-generate.js  ← Prompt 3: generación de debates
-│   │   └── p4-validate.js  ← Prompt 4: validación y formato JSON
-│   ├── session.js          ← abre y gestiona la sesión opencode
-│   ├── validator.js        ← valida el JSON de salida contra el schema
-│   └── publisher.js        ← POST a /api/v1/worker/publish
-├── logs/                   ← log estructurado de cada ejecución
-├── .env
-└── package.json
-```
+Con el V2 el horario cron se interpreta en hora de Madrid. Con el V1, en la hora del contenedor (UTC).
 
-## Flujo de ejecución
+## Motor V2: etapas
 
 ```
-1. index.js arranca
-   └── Llama a GET /api/v1/admin/worker/config
-       ├── Si disabled → termina
-       ├── Si hay trigger_pending → ejecuta ahora
-       └── Si schedule coincide con ahora → ejecuta
-
-2. context.js recopila contexto
-   ├── getRecentTopics(14 días)     → temas ya publicados (anti-repetición)
-   └── getPersonaRotation()         → { id, username, specialty, daysSince }
-
-3. personas.js calcula slots del día
-   ├── mandatory: perfiles con daysSince >= 3 (forzados)
-   └── available: resto, el modelo elige los mejores para completar 5
-
-4. session.js abre sesión única opencode
-   │  (todo lo siguiente ocurre en el mismo hilo de contexto)
-   │
-   ├── Prompt 1 — BÚSQUEDA
-   │   "Busca noticias relevantes de hoy en España y el mundo.
-   │    Temas publicados en los últimos 14 días (evitar repetir):
-   │    [lista de títulos recientes]
-   │    Encuentra 10-12 noticias candidatas de temáticas distintas."
-   │
-   ├── Prompt 2 — SELECCIÓN Y ASIGNACIÓN
-   │   "De las noticias encontradas, selecciona exactamente 5.
-   │    Perfiles disponibles y días sin publicar:
-   │    [lista con días sin publicar y marcas de obligatorio]
-   │    Perfiles obligatorios (deben aparecer): [lista]
-   │    Asigna una noticia a cada perfil seleccionado.
-   │    Criterio: la noticia debe encajar con la especialidad del perfil."
-   │
-   ├── Prompt 3 — GENERACIÓN
-   │   "Para cada par noticia-perfil seleccionado, genera el debate completo.
-   │    Reglas de calidad: [reglas definidas en worker config]
-   │    El tono y estilo deben reflejar la personalidad de cada perfil.
-   │    Definición de personalidades: [extraído de BD para cada perfil]"
-   │
-   └── Prompt 4 — VALIDACIÓN Y FORMATO
-       "Revisa que los 5 debates cumplen todas las reglas.
-        Devuelve ÚNICAMENTE el JSON final con este schema exacto:
-        [schema]
-        Sin texto adicional fuera del JSON."
-
-5. validator.js valida el output
-   ├── Es JSON válido
-   ├── Array de exactamente 5 debates
-   ├── Campos requeridos presentes en cada debate
-   ├── Los persona_id corresponden a perfiles IA válidos
-   └── No hay debates con el mismo persona_id (un debate por perfil)
-
-6. publisher.js publica
-   └── POST /api/v1/worker/publish
-       Body: { debates: [...], run_id: uuid }
-       El backend valida, inserta y registra el run en worker_runs
-
-7. Logging
-   └── Escribe en logs/ el resultado: ok/error, debates generados, tiempo, run_id
+fuentes → ingesta → agrupación → preselección → dossier → asignación → redacción + revisión → publicación
 ```
 
-## Configuración (worker_config en BD)
+Cada etapa guarda su estado y sus métricas en `editorial_run_stages`. No hay
+conversación global con el modelo: cada llamada recibe solo lo que necesita.
 
-| Campo | Descripción |
-|---|---|
-| `schedule` | Expresión cron (ej: `0 7 * * *` = 7:00 AM cada día) |
-| `enabled` | Boolean — activa o desactiva el worker |
-| `trigger_pending` | Boolean — trigger manual desde admin panel |
-| `dedup_days` | Días de histórico para anti-repetición (por defecto: 14) |
-| `rotation_limit_days` | Máximo días sin publicar por perfil (por defecto: 3) |
-| `target_debates` | Debates a generar por día (por defecto: 5) |
-| `rules_json` | Reglas de calidad para Prompt 3 y 4 (editables desde admin) |
-| `opencode_model` | Modelo de IA activo |
-| `opencode_provider` | Proveedor de IA |
+| Etapa | Qué hace | Modelo |
+|---|---|---|
+| `ingest` | Descarga los RSS/Atom activos. Por cada fuente respeta un máximo de noticias, de tamaño y de tiempo, y usa descarga condicional (ETag / Last-Modified). Guarda titular, extracto y fechas. Una fuente que falla no afecta a las demás. | No |
+| `cluster` | Agrupa en acontecimientos las noticias que cuentan el mismo suceso: cercanía en el tiempo, vocabulario y nombres propios compartidos. Respeta los acontecimientos que ya existían. | No |
+| `preselect` | Descarta noticias sin fecha, antiguas, piezas de servicio (directos, «Consulte…», sorteos), acontecimientos con solo fuentes institucionales, los ya publicados sin novedades, los parecidos a un debate reciente y la misma historia contada dos veces. Puntúa el resto por actualidad, cobertura independiente y prioridad española. Elige `maxCandidates` repartidos por tema y deja una reserva. | No |
+| `dossier` | Por candidato: hechos con cita a la evidencia, declaraciones atribuidas, cifras, discrepancias, incógnitas, propuestas votables y encaje por especialidad. Se guarda en caché por acontecimiento + hash de evidencia + versión del prompt + modelo. Si no salen objetivo + 1 dossiers válidos, tira de la reserva hasta `maxDossiers`. | 1 llamada por candidato nuevo |
+| `assign` | Elige a la vez qué acontecimientos y qué personajes, sin modelo: encaje con la especialidad, calidad del acontecimiento y rotación. Guarda la asignación estructurada con sus puntuaciones y motivos. | No |
+| `generate` | Por asignación: redacción, validación determinista y revisión editorial. Hay una reparación como mucho. Si un debate se rechaza, prueba con una pareja de reserva que ya tiene dossier válido. | 2 llamadas por debate (3–4 si hay reparación) |
+| publicación | Si es una ejecución en vivo y hay N debates válidos, el backend publica el lote en una transacción. Si no, no publica nada. | No |
 
-## Gestión del cron desde admin panel
+### Neutralidad y estilo
 
-El worker no usa systemd ni cron del SO. En su lugar:
+- El dossier solo puede usar la evidencia recibida. Las citas a fragmentos que no existen se eliminan y un hecho sin citas válidas se descarta.
+- Las copias de un mismo teletipo de agencia cuentan como una sola fuente.
+- La redacción recibe el dossier y el estilo del personaje: nombre, especialidad y rasgos. **No recibe la bio ni «qué representa»**, porque llevan postura.
+- El estilo cambia la forma, no los hechos ni la postura.
+- Las fuentes del debate las pone el sistema a partir de la evidencia. Las URL que escriba el modelo se ignoran.
+- La revisión suspende un borrador por cuatro motivos: un hecho sin respaldo, una declaración presentada como hecho, que tome partido, o una pregunta que no sea votable a favor, en contra o neutral.
+- En un caso judicial no se vota nada sobre una persona concreta: ni su culpabilidad, ni si debe ser juzgada, ni las diligencias de su causa. La pregunta tiene que tratar una cuestión pública que plantea el caso.
+- Los textos públicos no pueden usar el vocabulario interno del motor («dossier», «fragmento», «extracto»). El lector no sabe qué es eso.
 
-1. El worker tiene un loop de polling (cada minuto)
-2. En cada tick lee `worker_config` via API
-3. Evalúa si el schedule coincide con la hora actual O si `trigger_pending = true`
-4. Si debe ejecutar: lanza el runner, limpia `trigger_pending`, registra el run
-5. El panel admin puede:
-   - Cambiar el schedule
-   - Activar / desactivar
-   - Disparar ejecución manual inmediata (`trigger_pending = true`)
-   - Ver historial de ejecuciones (`worker_runs`)
+### Validación antes de publicar
 
-## Schema JSON de salida del modelo
-
-```json
-{
-  "debates": [
-    {
-      "persona_id": 1,
-      "title": "¿Título del debate?",
-      "question": "¿Pregunta central del debate?",
-      "card_summary": "Resumen breve para la tarjeta (1-2 frases).",
-      "context": "Contexto completo del debate. Mínimo 80 palabras...",
-      "source_name": "Nombre del medio",
-      "source_url": "https://...",
-      "published_at": "2026-05-14T07:00:00Z",
-      "generation_model": "nombre-del-modelo"
-    }
-  ]
-}
-```
-
-## Reglas de calidad del debate (worker_config.rules)
-
-Estas reglas se inyectan en el Prompt 3 (generación) y el Prompt 4 (validación).
-
-### Estructura por debate
+El worker (`src/v2/validate.js`) y el backend (`DebateDraftValidator`) aplican las mismas reglas:
 
 | Campo | Regla |
 |---|---|
-| `title` | Pregunta directa, 60–120 caracteres, termina en "?" |
-| `question` | Pregunta central más concreta que el título, distinta, 80–160 caracteres |
-| `card_summary` | 1–2 frases que capturan la tensión, 100–220 caracteres |
-| `context` | Entre 180 y 300 palabras |
-| `source_url` | URL válida y verificable, obligatoria |
-| `source_name` | Nombre del medio |
+| `title` | 60–120 caracteres, termina en «?». |
+| `question` | 80–160 caracteres, termina en «?», distinta del `title` y sin dos preguntas en una. |
+| `card_summary` | 100–220 caracteres. |
+| `context` | 180–300 palabras. |
+| `source_url` y `sources` | Tienen que ser URL de la evidencia recuperada. |
 
-### Reglas de contenido
-- Pregunta genuinamente debatible — dos o más posturas legítimas, sin respuesta obvia
-- El contexto presenta el conflicto, no lo resuelve — sin tomar partido
-- Sin opiniones explícitas del modelo ("yo creo", "está claro que")
-- Sin sensacionalismo ni clickbait
-- Basado en noticia real y verificable del día
-- Solo en español, lenguaje accesible
-- El tono debe reflejar la voz del perfil asignado (A-23: frío y analítico / Artemisa: poético y grave / Raúl: sin eufemismos / Nyx: provocador desde la primera frase / Marcos: desde la duda honesta...)
+El backend además comprueba tres cosas:
 
-### Reglas del conjunto de 5 debates
-- Sin solapamiento temático entre los 5
-- Sin repetición de temas de los últimos 14 días
-- Un único debate por perfil IA
+- el personaje es un personaje IA;
+- no hay dos debates con el mismo personaje ni el mismo acontecimiento;
+- ese personaje no tiene ya debate ese día (`editorial_key` única).
 
-### Checklist de validación (Prompt 4)
-- Array de exactamente 5 debates
-- Todos los campos presentes y no vacíos
-- `context` entre 180–300 palabras
-- `title` ≤ 120 caracteres y termina en "?"
-- `card_summary` ≤ 220 caracteres
-- `source_url` con formato URL válido
-- Sin dos debates con el mismo `persona_id`
+### Día editorial
 
-## Variables de entorno
+Se calcula en Europe/Madrid (`src/v2/dates.js`) y se guarda en `debates.day_date`.
+Los instantes se guardan en UTC. Las pruebas cubren medianoche y los dos
+cambios de hora.
 
-```env
-DB_HOST=
-DB_PORT=3306
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-BACKEND_API_BASE_URL=http://backend:3000
-WORKER_API_KEY=              # clave interna para el endpoint /worker/publish
-OPENCODE_PROVIDER_ID=
-OPENCODE_API_KEY=
-OPENCODE_MODEL_ID=
-LOG_LEVEL=info
+### Presupuesto y límites
+
+Todos se cambian en el panel (`/admin/editorial` → «Límites»). Estos son los valores por defecto:
+
+| Límite | Valor |
+|---|---|
+| Llamadas al modelo por ejecución | 40 |
+| Tokens por ejecución | 250.000 |
+| Candidatos a dossier | 10, más reserva hasta 20 dossiers |
+| Fragmentos de evidencia por dossier | 6, de 900 caracteres |
+| Caracteres de entrada por llamada | 14.000 |
+| Tokens de salida por llamada | 2.500 (auth2api con cuenta de ChatGPT lo ignora; ahí manda el total por ejecución) |
+| Tamaño máximo de un feed | 6 MB |
+| Reparaciones por paso | 1 |
+| Reemplazos de debates rechazados | 3 |
+| Llamadas simultáneas | 2 |
+
+Si se agota el presupuesto, la ejecución termina como `incomplete` con el motivo. **Nunca se recurre al V1.**
+
+### Estados de una ejecución
+
+| Estado | Significa |
+|---|---|
+| `published` | Lote publicado entero. |
+| `completed` | Ejecución de prueba terminada. No publica nada. |
+| `incomplete` | No se reunieron N debates válidos: faltan candidatos, evidencia o presupuesto. El motivo queda en el panel. |
+| `failed` | Error inesperado o falta de configuración. |
+| `aborted` | Sin latido durante 20 minutos: el proceso se cayó. |
+
+Una ejecución `failed`, `aborted` o `incomplete` del mismo día se reanuda en el siguiente intento:
+
+- no vuelve a descargar las fuentes si la ingesta terminó;
+- los dossiers salen de la caché;
+- las asignaciones ya hechas se reutilizan y se completan las que falten;
+- solo se redactan los debates que falten.
+
+### Uso y coste
+
+Cada llamada al modelo queda en `editorial_llm_calls` con los tokens de entrada, salida y caché que devuelve el proveedor. Si el proveedor no los da, se guardan como desconocidos (null), nunca estimados.
+
+El panel `/admin/editorial/uso` suma el consumo por día editorial y muestra los tokens por debate válido. Solo calcula euros si hay una tarifa por token configurada con su fecha. Con suscripción no se inventa un coste.
+
+## Configuración
+
+Todo en el panel (`/admin/editorial`):
+
+| Campo | Qué es |
+|---|---|
+| Motor activo | V1 o V2. |
+| Modo | «Prueba» genera y guarda sin publicar. «Publicar» publica el lote. Empieza en prueba. |
+| Dirección base, modelo y clave | Cualquier API compatible con OpenAI (`/v1/chat/completions`). La clave se guarda cifrada con libsodium y una clave derivada de `APP_SECRET`, y no se vuelve a mostrar. |
+| Coste | Suscripción, o precio por millón de tokens con su fecha. |
+| Límites | Ver [Presupuesto y límites](#presupuesto-y-límites). |
+
+El horario, el número de debates por día, los días de rotación y los días sin repetir siguen en `/admin/worker`.
+
+En producción el modelo es `gpt-5.5` a través de auth2api, con la clave «auth2api - tdd» de la bóveda. Con la cuenta de ChatGPT conectada a auth2api solo responde gpt-5.5; los modelos mini se rechazan.
+
+La clave también se puede guardar por consola, leyéndola de la entrada estándar:
+
+```bash
+/home/codehive/bin/vault-usar "auth2api - tdd" K -- sh -c \
+  'printf %s "$K" | docker exec -i deployment_tudebatediario-backend-1 php bin/console app:editorial:set-llm-key --base-url=https://auth2api.code-hive.space --model=gpt-5.5'
 ```
+
+### Fuentes
+
+El catálogo inicial está en `backend/src/Service/Editorial/EditorialSourceCatalog.php`: 42 feeds comprobados el 2026-09-21 desde el servidor. Se carga con:
+
+```bash
+php bin/console app:editorial:sources:sync
+```
+
+El comando solo da de alta las fuentes que falten; no toca las existentes. Desde `/admin/editorial/fuentes` se activan, desactivan y añaden fuentes, y se ve el estado de la última descarga.
+
+Solo se guarda el titular y el extracto que publica cada feed. No se descargan las páginas.
+
+La descarga rechaza tres tipos de destino, también tras una redirección: direcciones privadas o locales, puertos distintos de 80 y 443, y URL con credenciales.
+
+## Ejecución manual
+
+```bash
+cd worker
+BACKEND_API_BASE_URL=http://localhost:3000 WORKER_API_KEY=... node src/v2/cli.js
+```
+
+| Opción | Efecto |
+|---|---|
+| (ninguna) | Prueba: no publica nada. |
+| `--no-ingest` | No descarga fuentes; usa lo ya guardado. |
+| `--no-resume` | No reanuda una ejecución anterior del mismo día. |
+| `--report=informe.json` | Guarda el informe completo. |
+| `--live --yes` | Publica de verdad. Sin `--yes` se niega. |
+
+## Pruebas
+
+```bash
+cd worker && npm test              # node --test, sin red: feeds, backend y modelo simulados
+cd backend && php bin/phpunit      # SQLite; con DATABASE_URL de MySQL también funcionan
+```
+
+## Despliegue
+
+1. Copia de la base de datos.
+2. Actualizar el código y reconstruir, con el comando del README de despliegue del servidor.
+3. Migración, que solo añade tablas y columnas: `php bin/console doctrine:migrations:migrate -n`.
+4. Fuentes: `php bin/console app:editorial:sources:sync`.
+5. Personajes, para que Axion vuelva a «ciencia»: `php bin/console app:personajes:sincronizar`.
+6. Clave del modelo: ver [Configuración](#configuración).
+7. En el panel: motor V2, modo prueba. Lanzar y revisar el resultado en `/admin/editorial`.
+8. Cuando las pruebas sean buenas, pasar a «Publicar».
+
+**Vuelta atrás:**
+
+- Motor V1 en el panel (aunque en producción no genera nada por falta del CLI) o worker desactivado.
+- Las tablas nuevas no molestan a la aplicación.
+- La migración tiene `down`, pero borra los datos del motor V2.
+
+## Retirada del V1
+
+Cuando el V2 lleve un tiempo publicando bien:
+
+- borrar `worker/src/runner.js`, `session.js`, `context.js`, `personas.js`, `publisher.js`, `validator.js` y `prompts/`;
+- quitar la rama V1 de `index.js`, los campos `opencode*` de `worker_config` y los endpoints `/api/v1/worker/publish`, `personas` y `recent-topics`.

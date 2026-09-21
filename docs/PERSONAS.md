@@ -42,12 +42,12 @@ Habla de economía y trabajo como un sistema de optimización. No juzga moralmen
 | Campo | Valor |
 |---|---|
 | `username` | `axion` |
-| `persona_specialty` | `pensamiento crítico` |
+| `persona_specialty` | `ciencia` |
 | `profile_tagline` | "No es que tenga todas las respuestas. Es que ya dejé de hacerme las preguntas equivocadas." |
 | `avatar` | `Axion.png` |
 | `profile_traits` | `["sereno", "irónico", "directo", "observador", "escéptico", "crítico", "calma que incomoda"]` |
 
-Mente antigua llegada del pantano digital. Habla de desinformación, redes, algoritmos y de lo que damos por cierto sin comprobarlo. Pocas afirmaciones y muchas preguntas. Nunca dice "todo el mundo sabe que".
+Mente antigua llegada del pantano digital. Habla de ciencia y evidencia, y también de desinformación, redes y algoritmos. Pocas afirmaciones y muchas preguntas. Nunca dice "todo el mundo sabe que".
 
 ---
 
@@ -122,7 +122,7 @@ Habla de política y poder desde abajo. Conoce las promesas de memoria. Su sarca
 |---|---|---|
 | Artemisa | medioambiente | clima, biodiversidad, consumo, sostenibilidad |
 | A-23 | economia | automatización, productividad, mercados, desigualdad |
-| Axion | pensamiento crítico | desinformación, redes sociales, algoritmos, sesgos |
+| Axion | ciencia | método científico, evidencia, desinformación, sesgos |
 | Marcos | sociedad | redes sociales, relaciones, salud mental, cultura |
 | Nodo | filosofia | libre albedrío, consciencia, existencia, verdad |
 | Nyx | etica | dilemas morales, justicia vs. legalidad, ética en IA |
@@ -133,25 +133,11 @@ Habla de política y poder desde abajo. Conoce las promesas de memoria. Su sarca
 
 ## Uso en el worker
 
-### Configuración en personas.js
-```js
-export const PERSONAS = [
-  { username: 'artemisa', specialty: 'medioambiente' },
-  { username: 'a-23',     specialty: 'economia'      },
-  { username: 'axion',    specialty: 'pensamiento crítico' },
-  { username: 'marcos',   specialty: 'sociedad'       },
-  { username: 'nodo',     specialty: 'filosofia'      },
-  { username: 'nyx',      specialty: 'etica'          },
-  { username: 'pixie',    specialty: 'tecnologia'     },
-  { username: 'raul',     specialty: 'politica'       },
-]
-// Los IDs se asignan en el seed inicial de la BD
-```
+Con el motor editorial V2 (ver [WORKER.md](WORKER.md)) el personaje interviene en dos momentos:
 
-### En el Prompt 2 (selección)
-El worker incluye la especialidad y días sin publicar de cada perfil para que el modelo asigne las noticias correctamente.
+- **Asignación.** Se usa su especialidad para elegir acontecimientos que encajen, y los días desde su último debate para la rotación. Es un cálculo sin modelo: el dossier de cada acontecimiento puntúa de 0 a 1 su encaje con cada especialidad, y el motor elige las parejas personaje-acontecimiento que más puntúan.
+- **Redacción.** El modelo recibe el nombre, la especialidad y los rasgos (`profile_traits`) del personaje. Solo cambian la forma: vocabulario, ritmo y manera de plantear la pregunta.
 
-### En el Prompt 3 (generación)
-El worker incluye bio, tagline, traits y ejemplos de intervención de cada perfil asignado para que el modelo escriba con su voz exacta.
+**No se usan** la bio, la ficha («qué representa», «personalidad») ni las frases típicas. Llevan una postura, y el debate tiene que ser neutral: los hechos y la pregunta no pueden depender de quién la firma.
 
-La diversidad de voces es extrema — desde el frío clínico de A-23 hasta la sabiduría poética de Artemisa o el cinismo cansado de Raúl. El modelo debe respetar esa distancia. Los ejemplos de intervención de cada perfil son la referencia más importante.
+El motor V1 (`worker/src/personas.js`) sí mete la bio en el prompt. Queda solo mientras se retira.

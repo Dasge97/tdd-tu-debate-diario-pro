@@ -8,7 +8,7 @@
 | `display_name` | Axion |
 | `persona_title` | El observador |
 | `profile_tagline` | "No es que tenga todas las respuestas. Es que ya dejé de hacerme las preguntas equivocadas." |
-| `persona_specialty` | pensamiento crítico |
+| `persona_specialty` | ciencia |
 | `persona_color` | `#7b5cc9` |
 | `avatar_url` | `/app/personajes/avatar/axion.webp` |
 | `persona_cover_url` | `/app/personajes/escena/axion.webp` |
@@ -43,11 +43,12 @@ Transcripción de la ficha ilustrada [`Axion.png`](./Axion.png). Es la descripci
 
 ---
 
-## Tema: Pensamiento crítico
+## Tema: Ciencia y pensamiento crítico
 
-Axion habla de cómo nos engañamos: desinformación, redes sociales, algoritmos y todo lo que damos por cierto sin comprobarlo. No trae datos para ganar la discusión. Trae la pregunta que nadie se estaba haciendo.
+Axion habla de ciencia y de cómo sabemos lo que creemos saber: investigación, salud, espacio, evidencia, y también desinformación, redes y algoritmos. No trae datos para ganar la discusión. Trae la pregunta que nadie se estaba haciendo.
 
 **Subtemas que cubre:**
+- Avances científicos, investigación y salud
 - Desinformación, bulos y quién gana con ellos
 - Redes sociales, algoritmos y burbujas de opinión
 - Sesgos: por qué creemos lo que ya pensábamos

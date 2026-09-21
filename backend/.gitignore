@@ -15,3 +15,4 @@
 
 # Uploads de usuarios
 /public/uploads/
+/.phpunit.cache/

@@ -59,6 +59,30 @@ class Debate
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
 
+    // ── Motor editorial V2. Todo opcional: los debates anteriores no lo tienen. ──
+
+    #[ORM\ManyToOne(targetEntity: EditorialEvent::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?EditorialEvent $editorialEvent = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $editorialEventVersion = null;
+
+    /**
+     * "aaaa-mm-dd:id-del-personaje". Único: un personaje publica como mucho un
+     * debate del motor por día editorial, aunque se repita la publicación.
+     */
+    #[ORM\Column(type: 'string', length: 40, unique: true, nullable: true)]
+    private ?string $editorialKey = null;
+
+    /** Todas las fuentes usadas: [{name, url, publishedAt}]. sourceName/sourceUrl siguen siendo la principal. */
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $sources = null;
+
+    /** Copia de los hechos con los que se redactó. No cambia aunque el acontecimiento se actualice. */
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $factSnapshot = null;
+
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'debate')]
     private Collection $comments;
 
@@ -219,5 +243,60 @@ class Debate
     public function getComments(): Collection
     {
         return $this->comments;
+    }
+
+    public function getEditorialEvent(): ?EditorialEvent
+    {
+        return $this->editorialEvent;
+    }
+
+    public function setEditorialEvent(?EditorialEvent $event): static
+    {
+        $this->editorialEvent = $event;
+        return $this;
+    }
+
+    public function getEditorialEventVersion(): ?int
+    {
+        return $this->editorialEventVersion;
+    }
+
+    public function setEditorialEventVersion(?int $version): static
+    {
+        $this->editorialEventVersion = $version;
+        return $this;
+    }
+
+    public function getEditorialKey(): ?string
+    {
+        return $this->editorialKey;
+    }
+
+    public function setEditorialKey(?string $key): static
+    {
+        $this->editorialKey = $key;
+        return $this;
+    }
+
+    public function getSources(): ?array
+    {
+        return $this->sources;
+    }
+
+    public function setSources(?array $sources): static
+    {
+        $this->sources = $sources;
+        return $this;
+    }
+
+    public function getFactSnapshot(): ?array
+    {
+        return $this->factSnapshot;
+    }
+
+    public function setFactSnapshot(?array $snapshot): static
+    {
+        $this->factSnapshot = $snapshot;
+        return $this;
     }
 }

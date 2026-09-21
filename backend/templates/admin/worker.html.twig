@@ -13,7 +13,7 @@
                     <div class="mb-3">
                         <label class="form-label small text-muted">Cron schedule</label>
                         <input type="text" class="form-control" name="schedule" value="{{ config.schedule }}" placeholder="0 7 * * *">
-                        <div class="form-text">Expresión cron estándar (hora UTC)</div>
+                        <div class="form-text">Expresión cron estándar. Con el motor V2 se lee en hora de Madrid; con el V1, en UTC. El motor se elige en <a href="/admin/editorial">Motor editorial</a>.</div>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" name="enabled" id="enabled" {% if config.enabled %}checked{% endif %}>

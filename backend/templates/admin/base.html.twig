@@ -93,6 +93,15 @@
             <a href="/admin/worker" class="{{ app.request.pathInfo starts with '/admin/worker' ? 'active' : '' }}">
                 <i class="bi bi-gear"></i> Worker IA
             </a>
+            <a href="/admin/editorial" class="{{ app.request.pathInfo starts with '/admin/editorial' and not (app.request.pathInfo starts with '/admin/editorial/uso') and not (app.request.pathInfo starts with '/admin/editorial/fuentes') ? 'active' : '' }}">
+                <i class="bi bi-newspaper"></i> Motor editorial
+            </a>
+            <a href="/admin/editorial/uso" class="{{ app.request.pathInfo starts with '/admin/editorial/uso' ? 'active' : '' }}">
+                <i class="bi bi-bar-chart"></i> Uso del modelo
+            </a>
+            <a href="/admin/editorial/fuentes" class="{{ app.request.pathInfo starts with '/admin/editorial/fuentes' ? 'active' : '' }}">
+                <i class="bi bi-rss"></i> Fuentes
+            </a>
 
             <div class="nav-section">Sistema</div>
             <a href="/admin/audit-log" class="{{ app.request.pathInfo starts with '/admin/audit' ? 'active' : '' }}">

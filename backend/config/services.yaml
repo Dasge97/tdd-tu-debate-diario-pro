@@ -14,6 +14,15 @@ services:
         arguments:
             $jwtSecret: '%env(JWT_SECRET)%'
 
+    App\Service\Editorial\SecretBox:
+        arguments:
+            $appSecret: '%kernel.secret%'
+
+    App\Controller\Api\EditorialWorkerController:
+        arguments:
+            $workerApiKey: '%env(WORKER_API_KEY)%'
+        tags: ['controller.service_arguments']
+
     App\Controller\Api\WorkerController:
         arguments:
             $workerApiKey: '%env(WORKER_API_KEY)%'
