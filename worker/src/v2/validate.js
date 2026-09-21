@@ -49,7 +49,12 @@ export function validateDraft(draft, evidenceUrls) {
   // Vocabulario interno del motor que el lector no debe ver.
   const internal = /\b(dossier|fragmentos?|extractos?)\b/i;
   for (const field of ['title', 'question', 'card_summary', 'context']) {
-    if (internal.test(draft[field])) errors.push(`${field} usa vocabulario interno (dossier, fragmento, extracto)`);
+    const found = internal.exec(draft[field]);
+    if (found) {
+      // Se cita la frase para que la reparación sepa exactamente qué cambiar.
+      const sentence = draft[field].split(/(?<=[.!?])\s+/).find((s) => internal.test(s)) ?? found[0];
+      errors.push(`${field} usa vocabulario interno ("${found[0]}"): reescribe sin esa palabra la frase «${sentence.trim()}»`);
+    }
   }
 
   const allowed = new Set(evidenceUrls);

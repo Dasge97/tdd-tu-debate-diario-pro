@@ -200,7 +200,11 @@ export async function runEditorial({
         const added = fresh.assignments.length
           ? await api.saveAssignments(runId, fresh.assignments.map((a) => ({ ...a, slot: nextSlot++, status: 'planned' })))
           : [];
-        plan = { assignments: [...active, ...added], exceptions: fresh.exceptions, alternatives: fresh.alternatives };
+        // Las parejas de reserva incluyen a todos los personajes: el que tuvo un
+        // rechazo puede volver con otro acontecimiento. Al sustituir ya se evita
+        // repetir personaje o acontecimiento del lote.
+        const allPairs = assign({ personas, candidates, target: 0, rotationLimitDays: config.rotation_limit_days }).alternatives;
+        plan = { assignments: [...active, ...added], exceptions: fresh.exceptions, alternatives: allPairs };
         return { reused: active.length, added: added.length, exceptions: plan.exceptions };
       }
       plan = assign({ personas, candidates, target, rotationLimitDays: config.rotation_limit_days });
