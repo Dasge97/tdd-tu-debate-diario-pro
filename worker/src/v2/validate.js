@@ -8,25 +8,8 @@ export const LIMITS = {
   title: [60, 120],
   question: [80, 160],
   card_summary: [100, 220],
-  contextWords: [200, 420],
+  contextWords: [150, 350],
 };
-
-/** Bloques obligatorios del contexto, cada uno en su propia línea. */
-export const CONTEXT_SECTIONS = ['Qué ha pasado', 'Qué se discute', 'A favor', 'En contra'];
-
-/** Parte el contexto en bloques por sus títulos. Devuelve {título: [líneas]}. */
-export function contextSections(context) {
-  const out = {};
-  let current = null;
-  for (const raw of String(context ?? '').split('\n')) {
-    const line = raw.trim();
-    if (!line) continue;
-    const heading = [...CONTEXT_SECTIONS, 'Lo que no se sabe'].find((h) => line.replace(/:$/, '') === h);
-    if (heading) { current = heading; out[current] = []; continue; }
-    if (current) out[current].push(line);
-  }
-  return out;
-}
 
 const wordCount = (s) => String(s ?? '').trim().split(/\s+/).filter(Boolean).length;
 
@@ -63,17 +46,8 @@ export function validateDraft(draft, evidenceUrls) {
   const words = wordCount(draft.context);
   if (words < wMin || words > wMax) errors.push(`context tiene ${words} palabras (${wMin}-${wMax})`);
 
-  // Un debate, no una noticia: bloques obligatorios y los dos lados con los mismos argumentos.
-  const sections = contextSections(draft.context);
-  const missing = CONTEXT_SECTIONS.filter((h) => !sections[h]?.length);
-  if (missing.length) errors.push(`context sin los bloques: ${missing.join(', ')} (cada título en su propia línea)`);
-  const bullets = (h) => (sections[h] ?? []).filter((l) => l.startsWith('•')).length;
-  if (!missing.includes('A favor') && !missing.includes('En contra')) {
-    const pro = bullets('A favor');
-    const con = bullets('En contra');
-    if (pro < 2 || con < 2) errors.push(`A favor y En contra necesitan al menos 2 argumentos con "• " (hay ${pro} y ${con})`);
-    else if (pro !== con) errors.push(`A favor tiene ${pro} argumentos y En contra ${con}: tienen que ser los mismos`);
-  }
+  // Es una intervención en párrafos: sin títulos de bloque ni viñetas.
+  if (/^\s*[•\-–]\s/m.test(draft.context)) errors.push('context lleva viñetas: tiene que ser una intervención en párrafos');
 
   // Vocabulario interno del motor que el lector no debe ver.
   const internal = /\b(dossier|fragmentos?|extractos?)\b/i;

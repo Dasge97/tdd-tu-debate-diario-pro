@@ -140,11 +140,9 @@ test('validación de borradores igual que en el backend', () => {
   };
   assert.deepEqual(validateDraft(draft, ['https://medio.example/a']), []);
 
-  // Una noticia sin bloques de debate no vale.
-  assert.match(validateDraft({ ...draft, context: 'palabra '.repeat(250) }, ['https://medio.example/a']).join(' '), /sin los bloques/);
-  // Los dos lados tienen que tener los mismos argumentos.
-  const desigual = debateContext().replace('En contra\n• ', 'En contra\n');
-  assert.match(validateDraft({ ...draft, context: desigual }, ['https://medio.example/a']).join(' '), /argumentos/);
+  // Es una intervención en párrafos, no una lista.
+  const conVinetas = `${debateContext()}\n• un argumento suelto`;
+  assert.match(validateDraft({ ...draft, context: conVinetas }, ['https://medio.example/a']).join(' '), /viñetas/);
   const bad = { ...draft, question: '¿A favor? ¿O en contra de todo lo que propone el ayuntamiento para el centro de la ciudad?', source_url: 'https://otra.example' };
   const errors = validateDraft(bad, ['https://medio.example/a']).join(' | ');
   assert.match(errors, /más de una pregunta/);

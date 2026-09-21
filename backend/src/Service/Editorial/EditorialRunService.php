@@ -356,9 +356,9 @@ class EditorialRunService
     }
 
     /**
-     * Personajes con lo que el motor necesita: especialidad, rasgos de estilo
-     * y días desde su último debate. No se mandan la bio ni "qué representa",
-     * porque llevan postura y el debate tiene que ser neutral.
+     * Personajes con lo que el motor necesita: especialidad, rasgos, carácter
+     * (cómo habla) y días desde su último debate. No se mandan la bio ni "qué
+     * representa", porque llevan postura y el debate tiene que ser neutral.
      */
     public function personas(): array
     {
@@ -372,6 +372,8 @@ class EditorialRunService
                 'display_name' => $persona->getDisplayName() ?? $persona->getUsername(),
                 'specialty'    => $persona->getPersonaSpecialty(),
                 'traits'       => $persona->getProfileTraits() ?? [],
+                // Cómo habla el personaje. Es tono, no postura: la redacción le exige neutralidad.
+                'voice'        => $persona->getPersonaSheet()['personalidad'] ?? null,
                 'days_since'   => $last !== null ? (int) (new \DateTimeImmutable($last->format('Y-m-d')))->diff($now)->days : null,
             ];
         }

@@ -208,10 +208,8 @@ const TOPIC_WORDS = [
 
 const words = (n, w = 'dato') => Array.from({ length: n }, (_, i) => `${w}${i % 7}`).join(' ');
 
-/** Contexto con los bloques de un debate (unas 230 palabras). */
-export const debateContext = () => ['Qué ha pasado', words(60), 'Qué se discute', words(40),
-  'A favor', `• ${words(25)}`, `• ${words(25)}`, 'En contra', `• ${words(25)}`, `• ${words(25)}`,
-  'Lo que no se sabe', words(20)].join('\n');
+/** Intervención del personaje en párrafos (unas 220 palabras). */
+export const debateContext = () => [words(60), words(60), words(60), words(40)].join('\n\n');
 
 /**
  * Modelo falso. Reconoce el tipo de llamada por el prompt de sistema.
@@ -248,7 +246,7 @@ export function fakeLlmTransport({ failGenerateFor = null, usage = true, insuffi
         specialty_fit: fit, spain_relevance: 0.9, public_interest: 0.7,
       });
     }
-    if (system.includes('Redactas debates')) {
+    if (system.includes('Escribes como un personaje')) {
       const persona = /PERSONAJE: (\S+)/.exec(user)[1];
       if (failGenerateFor && persona === failGenerateFor) {
         return reply({ title: 'Corto?', question: 'x', card_summary: 'y', context: 'z', used_refs: ['E1'], primary_ref: 'E1' });

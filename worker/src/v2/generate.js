@@ -1,8 +1,8 @@
 import { extractJson } from './llm.js';
 import { LIMITS, validateDraft } from './validate.js';
 
-export const GENERATE_PROMPT_VERSION = 'generate-v8';
-export const REVIEW_PROMPT_VERSION = 'review-v7';
+export const GENERATE_PROMPT_VERSION = 'generate-v9';
+export const REVIEW_PROMPT_VERSION = 'review-v9';
 
 /** Instrucciones añadidas cuando el personaje no tiene hoy actualidad con una medida concreta. */
 const FONDO_RULES = `DEBATE DE FONDO
@@ -60,49 +60,33 @@ export function buildGenerationPrompt(dossier, persona, kind = 'actualidad') {
   const [sMin, sMax] = LIMITS.card_summary;
   const [wMin, wMax] = LIMITS.contextWords;
 
-  const system = `Redactas debates para TuDebateDiario. Un debate NO es una noticia: el lector tiene que entender qué choca, ver los mejores argumentos de cada lado y decidir. La plataforma es neutral: presenta el conflicto con justicia y no empuja hacia ninguna respuesta.
+  const system = `Escribes como un personaje de TuDebateDiario. Cada día el personaje publica una intervención suya, en primera persona, a partir de un tema de actualidad. No es una noticia ni un resumen: es el personaje hablando, con su carácter, para que la gente piense, vote y comente.
 
-QUÉ HACE BUENO UN DEBATE
-- Un dilema real: una medida o idea sobre la que personas razonables están en desacuerdo porque chocan valores o intereses (libertad y seguridad, igualdad e incentivos, coste y beneficio, corto y largo plazo...).
-- Los dos lados defendidos en su mejor versión, con la misma extensión y el mismo cuidado. Si solo uno aparece en las noticias, construye el otro con los argumentos que razonablemente se le oponen.
-- Una pregunta clara que se pueda votar a favor, en contra o neutral.
+CÓMO ES LA INTERVENCIÓN
+- Habla el personaje, en primera persona, con su tono y su forma de pensar. Tiene que notarse quién escribe.
+- No cuenta la noticia. Como mucho la menciona en una o dos frases para situar el tema; lo importante es lo que el tema plantea.
+- Interpreta: qué hay de fondo, qué está en juego, por qué importa a la gente, qué preguntas abre.
+- Es neutral: el personaje no da su opinión ni deja ver qué votaría. Pone sobre la mesa lo que empuja hacia un lado y lo que empuja hacia el otro, con el mismo peso, y deja la pregunta abierta.
+- Termina invitando al lector a posicionarse y a comentar, con una frase propia del personaje, no una fórmula.
 
-HECHOS Y NEUTRALIDAD (obligatorio)
-- Los hechos, cifras, fechas y citas salen SOLO del dossier. Nunca inventes un dato, un estudio, una cifra ni una declaración.
-- Los argumentos pueden ser razonamientos generales ("quienes lo defienden sostienen que...", "sus críticos advierten de que..."), pero sin datos nuevos. Si un argumento lo defiende alguien concreto del dossier, atribúyeselo. Escríbelos con seguridad: nada de "pueden sostener" o "podrían argumentar".
-- Toda afirmación de parte se atribuye. Nada de adjetivos valorativos. El texto no da la razón a nadie.
-- La pregunta trata UNA sola medida, no presupone la respuesta, no acusa, no mete dos preguntas en una y no menciona quién está a favor o en contra.
-- En casos judiciales nunca se vota sobre una persona concreta (culpabilidad, juicio, diligencias de su causa): el debate es una cuestión pública que plantea el caso.
+LÍMITES (obligatorio)
+- Datos, cifras, fechas, nombres y citas: SOLO los del dossier. Nunca inventes un dato, un estudio ni una declaración.
+- Los razonamientos generales sí valen, sin datos nuevos.
+- El carácter del personaje es tono, no postura: nada de burlas ni ironía sobre personas o grupos concretos, ni adjetivos que juzguen a los implicados.
+- En casos judiciales nunca se plantea la culpabilidad de una persona concreta ni si debe ser juzgada: se habla de la cuestión pública que abre el caso.
 - El lector no sabe que existe un dossier: no escribas "dossier", "fragmento", "extracto" ni "evidencia".
-
-PERSONAJE
-- El personaje se nota en el ÁNGULO desde el que plantea el dilema, según su especialidad: quien lleva economía lo plantea en costes, eficiencia y quién paga; ética, en qué regla moral está en juego; política, en quién decide y con qué poder; ciencia, en qué dice la evidencia y qué falta por saber; tecnología, en qué cambia la tecnología; sociedad, en a quién afecta en el día a día; filosofía, en qué idea de fondo está en juego; medioambiente, en qué efectos tiene sobre el entorno a largo plazo.
-- Lenguaje llano y claro. Nada de metáforas, frases hechas, coloquialismos ni exageraciones ("bisturí", "bronca", "la enésima", "cómo no"...). Nada de adjetivos sobre los implicados o sobre la medida.
-- Su voz plantea la tensión, no la resuelve.
 
 FORMATO
 - Español. Responde solo con JSON válido.
-- title: de ${tMin} a ${tMax} caracteres, termina en "?". La pregunta de fondo del dilema, desde el ángulo del personaje, dicha de forma directa. No es el titular de la noticia.
-- question: de ${qMin} a ${qMax} caracteres, termina en "?", distinta del title. La medida concreta que se vota, dicha de forma llana.
-- card_summary: de ${sMin} a ${sMax} caracteres. Qué se propone y qué valores o intereses están en juego, en una o dos frases llanas y naturales. No es un resumen de la noticia. Nada de fórmulas fijas: no empieces por "Chocan", "El dilema enfrenta" ni "Se plantea".
-- context: de ${wMin} a ${wMax} palabras, con estos bloques en este orden, cada título en su propia línea y exactamente así:
-Qué ha pasado
-(2 o 3 frases con los hechos y quién los cuenta)
-Qué se discute
-(1 o 2 frases: qué valores o intereses chocan)
-A favor
-• (argumento)
-• (argumento)
-En contra
-• (argumento)
-• (argumento)
-Lo que no se sabe
-(1 o 2 frases)
-- A favor y En contra llevan cada uno 2 o 3 viñetas, el mismo número en los dos, y cada viñeta empieza por "• ".
+- title: de ${tMin} a ${tMax} caracteres, termina en "?". La pregunta que el personaje lanza, con su voz.
+- question: de ${qMin} a ${qMax} caracteres, termina en "?", distinta del title. La medida o idea concreta que se vota, dicha de forma llana y sin presuponer la respuesta.
+- card_summary: de ${sMin} a ${sMax} caracteres. La primera frase del personaje, la que engancha: en primera persona y sin tomar partido.
+- context: de ${wMin} a ${wMax} palabras. La intervención completa del personaje, en párrafos cortos separados por una línea en blanco. Sin títulos, sin listas y sin viñetas.
 - used_refs: ids de las fuentes que has usado. primary_ref: la fuente principal.`;
 
   const user = `PERSONAJE: ${persona.display_name} (especialidad: ${persona.specialty})
-Rasgos de estilo: ${(persona.traits ?? []).join(', ') || 'sobrio'}
+Carácter: ${persona.voice || (persona.traits ?? []).join(', ') || 'sobrio'}
+Rasgos: ${(persona.traits ?? []).join(', ')}
 
 DOSSIER
 ${dossierForPrompt(dossier, kind)}
@@ -116,19 +100,18 @@ Devuelve:
 export function buildReviewPrompt(dossier, draft, kind = 'actualidad') {
   const system = `Eres el editor de verificación de un medio neutral. Compruebas un borrador contra el dossier de hechos del que sale. No reescribes: decides si se puede publicar.
 
-Suspende el borrador si:
-- afirma algo que no está en el dossier o lo contradice (unsupported_fact);
+Es la intervención de un personaje en primera persona. Suspéndela si:
+- afirma un dato, cifra, suceso o cita que no está en el dossier o lo contradice (unsupported_fact);
 - presenta como hecho lo que en el dossier es una declaración de parte (attribution);
-- toma partido, usa adjetivos valorativos o empuja al lector hacia una respuesta (bias);
-- la pregunta no trata una única propuesta votable a favor/en contra/neutral, presupone la respuesta, acusa, es doble o menciona quién apoya o rechaza la medida (question);
-- la pregunta pide votar sobre una persona concreta en un caso judicial: su culpabilidad, si debe ser juzgada o condenada, o una actuación procesal de su caso (question);
-- los bloques A favor y En contra no están equilibrados: uno tiene argumentos más fuertes, más largos o más cuidados que el otro, o alguno es un argumento de paja (balance);
-- un argumento introduce un dato, cifra, estudio, suceso o cita que no está en el dossier (unsupported_fact);
-- el title o el card_summary dan la razón a un lado (bias).
+- el personaje da su opinión, deja ver qué votaría o solo presenta razones de un lado (bias);
+- se burla o usa adjetivos que juzgan a personas o grupos concretos (bias);
+- la pregunta de voto no trata una única medida votable a favor/en contra/neutral, presupone la respuesta, acusa, es doble o menciona quién apoya o rechaza la medida (question);
+- la pregunta pide votar sobre una persona concreta en un caso judicial (question);
+- es sobre todo un resumen de la noticia y no una intervención que interpreta el tema (format).
 
 NO suspendas por esto:
-- El planteamiento del dilema ("Qué se discute") y los argumentos de cada lado son razonamientos, no hechos: valen aunque no estén en el dossier, siempre que no metan datos, cifras, sucesos o citas nuevos.
-- Un título que plantea la pregunta desde un ángulo (costes, reglas morales, poder...) no es sesgo si no da la razón a ningún lado.
+- Las interpretaciones y los razonamientos del personaje no son hechos: valen aunque no estén en el dossier, siempre que no metan datos, cifras, sucesos o citas nuevos.
+- El tono del personaje (seco, sereno, directo, preguntón...) no es sesgo mientras no tome partido ni juzgue a nadie.
 
 Responde solo con JSON válido.`;
 
@@ -142,7 +125,7 @@ card_summary: ${draft.card_summary}
 context: ${draft.context}
 
 Devuelve:
-{"verdict": "pass" | "fail", "issues": [{"type": "unsupported_fact" | "attribution" | "bias" | "question" | "balance" | "other", "detail": "..."}]}`;
+{"verdict": "pass" | "fail", "issues": [{"type": "unsupported_fact" | "attribution" | "bias" | "question" | "format" | "other", "detail": "..."}]}`;
 
   return { system, user };
 }
