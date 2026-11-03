@@ -138,6 +138,8 @@ class EditorialPublisher
                 $event->setLastPublishedVersion($assignment->getEventVersion());
             }
 
+            self::pickFeatured($batch)->getDebate()->setFeatured(true);
+
             $run->setStatus('published');
             $run->setPublishedCount(count($batch));
             $run->setFinishedAt(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
@@ -149,6 +151,27 @@ class EditorialPublisher
 
             return ['status' => 'published', 'created' => count($ids), 'debate_ids' => $ids, 'already_published' => false];
         });
+    }
+
+    /**
+     * Debate del día: el de mejor calidad del acontecimiento (interés público y
+     * relevancia en España, ver eventQuality en el worker). Los de fondo solo
+     * cuentan si no hay otro. A igualdad, el primero del lote.
+     *
+     * @param EditorialAssignment[] $batch no vacío
+     */
+    public static function pickFeatured(array $batch): EditorialAssignment
+    {
+        $news = array_values(array_filter($batch, static fn(EditorialAssignment $a) => ($a->getScores()['kind'] ?? null) !== 'fondo'));
+        $pool = $news !== [] ? $news : $batch;
+
+        $best = $pool[0];
+        foreach ($pool as $a) {
+            if ((float) ($a->getScores()['quality'] ?? 0) > (float) ($best->getScores()['quality'] ?? 0)) {
+                $best = $a;
+            }
+        }
+        return $best;
     }
 
     /**

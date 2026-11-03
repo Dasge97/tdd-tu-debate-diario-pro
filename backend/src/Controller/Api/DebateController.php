@@ -68,6 +68,34 @@ class DebateController extends AbstractController
         return new JsonResponse($this->normalizeDebates($debates));
     }
 
+    /**
+     * Debate del día, para la app que lo publica en Instagram. ?date=aaaa-mm-dd
+     * para otro día; por defecto, hoy en Europe/Madrid. 404 si ese día no hay.
+     */
+    #[Route('/featured', name: 'api_debates_featured', methods: ['GET'])]
+    public function featured(Request $request): JsonResponse
+    {
+        $tz = new \DateTimeZone('Europe/Madrid');
+        $date = (string) $request->query->get('date', '');
+        if ($date === '') {
+            $day = new \DateTimeImmutable('now', $tz);
+        } else {
+            $day = \DateTimeImmutable::createFromFormat('!Y-m-d', $date, $tz);
+            if ($day === false || $day->format('Y-m-d') !== $date) {
+                throw new \InvalidArgumentException('date debe tener el formato aaaa-mm-dd');
+            }
+        }
+
+        $debate = $this->debateRepository->findFeaturedOn($day);
+        if ($debate === null) {
+            throw new \RuntimeException('NOT_FOUND: no hay debate del día el ' . $day->format('Y-m-d'));
+        }
+
+        return new JsonResponse($this->normalizeDebate($debate) + [
+            'url' => 'https://tudebatediario.com/app/debate/' . $debate->getId(),
+        ]);
+    }
+
     #[Route('/trending', name: 'api_debates_trending', methods: ['GET'])]
     public function trending(): JsonResponse
     {
@@ -122,6 +150,7 @@ class DebateController extends AbstractController
             'sources'         => $debate->getSources(),
             'publishedAt'     => $debate->getPublishedAt()?->format(\DateTimeInterface::ATOM),
             'dayDate'         => $debate->getDayDate()->format('Y-m-d'),
+            'featured'        => $debate->isFeatured(),
             'authorType'      => $debate->getAuthorType(),
             'generationModel' => $debate->getGenerationModel(),
             'createdAt'       => $debate->getCreatedAt()->format(\DateTimeInterface::ATOM),

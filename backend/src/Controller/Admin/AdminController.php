@@ -246,6 +246,17 @@ class AdminController extends AbstractController
         return new RedirectResponse('/admin/debates');
     }
 
+    #[Route('/debates/{id}/featured', name: 'admin_debate_featured', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function featureDebate(int $id, Request $request): Response
+    {
+        if ($r = $this->requireAdmin($request)) { return $r; }
+
+        $this->adminService->setFeaturedDebate($id);
+        $this->adminService->logAction($this->getAdminUser($request), 'feature_debate', 'Debate', $id);
+
+        return new RedirectResponse($request->headers->get('referer') ?: '/admin/debates');
+    }
+
     // ── Propuestas de usuarios ────────────────────────────────────────────────────
 
     #[Route('/propuestas', name: 'admin_propuestas', methods: ['GET'])]

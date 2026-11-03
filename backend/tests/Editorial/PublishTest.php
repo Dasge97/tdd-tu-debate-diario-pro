@@ -34,6 +34,33 @@ class PublishTest extends EditorialTestCase
         self::assertNotEmpty(json_decode($row['fact_snapshot'], true)['data']['facts']);
     }
 
+    public function testElDebateDelDiaEsElDeMejorCalidadSinContarLosDeFondo(): void
+    {
+        $personas = $this->personas(6);
+        $run = $this->liveRunWithValidated($personas, 5, scores: [
+            ['quality' => 0.4],
+            ['quality' => 0.9, 'kind' => 'fondo'],
+            ['quality' => 0.7],
+            ['quality' => 0.5],
+            ['quality' => 0.6],
+        ]);
+
+        $this->publisher()->publish($run->getId());
+
+        $featured = $this->em->getConnection()->fetchFirstColumn('SELECT editorial_key FROM debates WHERE featured = 1');
+        self::assertSame(['2026-09-21:' . $personas[2]->getId()], $featured);
+    }
+
+    public function testSiTodosSonDeFondoTambienHayDebateDelDia(): void
+    {
+        $personas = $this->personas(6);
+        $run = $this->liveRunWithValidated($personas, 5, scores: array_fill(0, 5, ['kind' => 'fondo']));
+
+        $this->publisher()->publish($run->getId());
+
+        self::assertSame(1, (int) $this->em->getConnection()->fetchOne('SELECT COUNT(*) FROM debates WHERE featured = 1'));
+    }
+
     public function testRepetirLaPublicacionNoDuplica(): void
     {
         $personas = $this->personas(6);

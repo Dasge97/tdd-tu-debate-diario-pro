@@ -140,8 +140,9 @@ abstract class EditorialTestCase extends KernelTestCase
      * Ejecución en vivo con N asignaciones validadas, lista para publicar.
      *
      * @param User[] $personas
+     * @param array<int, array> $scores puntuaciones por posición en el lote
      */
-    protected function liveRunWithValidated(array $personas, int $validated, string $day = '2026-09-21'): EditorialRun
+    protected function liveRunWithValidated(array $personas, int $validated, string $day = '2026-09-21', array $scores = []): EditorialRun
     {
         $source = $this->source('medio-' . bin2hex(random_bytes(3)));
         $started = $this->runs()->start(EditorialRun::MODE_LIVE, $day, 'test', false);
@@ -157,6 +158,7 @@ abstract class EditorialTestCase extends KernelTestCase
                 'dossier_id' => $e['dossier_id'],
                 'status'     => 'validated',
                 'draft'      => self::validDraft($e['url'], $i),
+                'scores'     => $scores[$i] ?? [],
             ];
         }
         $this->runs()->saveAssignments($run->getId(), $items);

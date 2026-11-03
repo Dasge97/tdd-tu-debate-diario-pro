@@ -257,6 +257,23 @@ class AdminService
         $em->flush();
     }
 
+    /** Lo marca como debate del día y desmarca el que hubiera ese mismo día. */
+    public function setFeaturedDebate(int $id): void
+    {
+        $debate = $this->debateRepository->find($id);
+        if ($debate === null) {
+            throw new \RuntimeException('Debate no encontrado');
+        }
+
+        $em = $this->debateRepository->getEntityManager();
+        $em->wrapInTransaction(function () use ($debate): void {
+            foreach ($this->debateRepository->findBy(['dayDate' => $debate->getDayDate(), 'featured' => true]) as $other) {
+                $other->setFeatured(false);
+            }
+            $debate->setFeatured(true);
+        });
+    }
+
     // ── Propuestas de usuarios ────────────────────────────────────────────────────
 
     public function getUserProposals(int $page): array

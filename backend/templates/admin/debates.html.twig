@@ -54,6 +54,7 @@
                         <a href="/admin/debates/{{ debate.id }}" class="text-decoration-none fw-semibold">
                             {{ debate.title|length > 70 ? debate.title[:70] ~ '…' : debate.title }}
                         </a>
+                        {% if debate.featured %}<span class="badge bg-warning text-dark ms-1">Debate del día</span>{% endif %}
                     </td>
                     <td class="small">@{{ debate.createdBy.username }}</td>
                     <td>
@@ -66,6 +67,11 @@
                     <td>
                         <div class="d-flex gap-1">
                             <a href="/admin/debates/{{ debate.id }}" class="btn btn-xs btn-outline-secondary">Ver</a>
+                            {% if not debate.featured and debate.authorType == 'ai' %}
+                            <form method="POST" action="/admin/debates/{{ debate.id }}/featured" class="d-inline">
+                                <button type="submit" class="btn btn-xs btn-outline-warning">Hacer debate del día</button>
+                            </form>
+                            {% endif %}
                             <form method="POST" action="/admin/debates/{{ debate.id }}/delete" class="d-inline">
                                 <button type="submit" class="btn btn-xs btn-outline-danger"
                                     onclick="return confirm('¿Eliminar este debate? Esta acción es irreversible.')">

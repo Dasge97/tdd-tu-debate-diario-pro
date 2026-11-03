@@ -36,6 +36,11 @@ const grupos = computed(() => {
     }
   });
 
+  /* El debate del dia va el primero de su fecha. */
+  porDia.forEach((grupo) => {
+    grupo.debates.sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
+  });
+
   return porDia;
 });
 

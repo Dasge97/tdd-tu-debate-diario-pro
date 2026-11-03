@@ -83,6 +83,10 @@ class Debate
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $factSnapshot = null;
 
+    /** Debate del día: uno por día editorial, el que se anuncia fuera (Instagram). */
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $featured = false;
+
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'debate')]
     private Collection $comments;
 
@@ -286,6 +290,17 @@ class Debate
     public function setSources(?array $sources): static
     {
         $this->sources = $sources;
+        return $this;
+    }
+
+    public function isFeatured(): bool
+    {
+        return $this->featured;
+    }
+
+    public function setFeatured(bool $featured): static
+    {
+        $this->featured = $featured;
         return $this;
     }
 

@@ -24,9 +24,21 @@ class DebateRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('d')
             ->where('d.dayDate = :today')
             ->setParameter('today', $today->format('Y-m-d'))
-            ->orderBy('d.createdAt', 'DESC')
+            ->orderBy('d.featured', 'DESC')
+            ->addOrderBy('d.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    public function findFeaturedOn(\DateTimeInterface $date): ?Debate
+    {
+        return $this->createQueryBuilder('d')
+            ->where('d.dayDate = :date')
+            ->andWhere('d.featured = true')
+            ->setParameter('date', $date->format('Y-m-d'))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function findByDayDate(\DateTimeInterface $date): array

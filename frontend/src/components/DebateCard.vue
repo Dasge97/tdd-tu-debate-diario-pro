@@ -101,7 +101,12 @@ const dobleToque = async () => {
 </script>
 
 <template>
-  <article class="debate-card debate-surface">
+  <article class="debate-card debate-surface" :class="{ 'debate-card-destacado': debate.featured }">
+    <p v-if="debate.featured" class="debate-del-dia">
+      <span class="material-symbols-rounded">star</span>
+      Debate del día
+    </p>
+
     <div class="debate-card-topbar">
       <button
         v-if="author"

@@ -33,7 +33,7 @@ class JwtAuthSubscriber implements EventSubscriberInterface
      */
     private const PUBLIC_READ_PATTERNS = [
         '#^/api/v1/debates$#',
-        '#^/api/v1/debates/(ticker|top-today|top-week|recent|today|trending|search)$#',
+        '#^/api/v1/debates/(ticker|top-today|top-week|recent|today|featured|trending|search)$#',
         '#^/api/v1/debates/\d+$#',
         '#^/api/v1/debates/\d+/(positions|comments)$#',
         '#^/api/v1/personas$#',
